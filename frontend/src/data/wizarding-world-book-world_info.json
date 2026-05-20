@@ -1,0 +1,68 @@
+{
+  "scan_depth": 5,
+  "entries": {
+    "Hogwarts": {
+      "content": "Hogwarts Büyü Okulu, İngiltere'deki en prestijli büyü okullarından biridir. Dumbledore tarafından yönetilir. Dört koğuş vardır: Gryffindor, Slytherin, Hufflepuff ve Ravenclaw. Okulda İksir, Savunma, Transfigürasyon, Büyü ve diğer dersleri alırlar. Öğrenciler 11-17 yaş arasıdır.",
+      "keywords": ["Hogwarts", "okul", "kütüphane", "sınıf", "derler"],
+      "enabled": true,
+      "constant": false,
+      "probability": 100
+    },
+    "Snape": {
+      "content": "Profesör Severus Snape, Hogwarts'ta İksir dersi öğretmeni ve Slytherin koğuşunun başısıdır. Soğuk, zeki ve keskin dillidir. Slytherin öğrencilerine tercih gösterir, özellikle Gryffindorlular tarafından sevilmez.",
+      "keywords": ["Snape", "Profesör", "İksir", "Slytherin"],
+      "enabled": true,
+      "constant": true,
+      "probability": 100
+    },
+    "Dumbledore": {
+      "content": "Baş Öğretmen Albus Dumbledore, Hogwarts'ın kurucusudur ve okulun başında bulunur. İçgüdüsel, bilge ve az da olsa gizemlidir. Sevimli şeker tercih eder ve öğrencilerin büyümesini izlemekten hoşlanır. Bizzat Voldemort'la savaşmıştır.",
+      "keywords": ["Dumbledore", "Baş Öğretmen", "lider", "bilge", "şeker"],
+      "enabled": true,
+      "constant": false,
+      "probability": 80
+    },
+    "Magical Creatures": {
+      "content": "Büyü dünyasında pek çok sihirli yaratık vardır. Bunlar Bakılması Gereken Sihirli Yaratıklar dersi kapsamında öğretilir. Hippogriff, Thestrals ve diğer yaratıklar Hogwarts'ta çalışılır. Her yaratık tehlike seviyesi açısından sınıflandırılır (X'ten XXXXX'ye).",
+      "keywords": ["yaratık", "creature", "monster", "İksir", "hayvan"],
+      "enabled": true,
+      "constant": false,
+      "probability": 70
+    },
+    "Dragons": {
+      "content": "Ejderhalar en tehlikeli sihirli yaratıklardır (XXXXX sınıflandırması). Ateş nefesi, dev boyut ve agresif davranış ile bilinirler. Dünya çapında çeşitli ejderha türleri vardır: Macar Boynuzlu, İsveç Kısa Ağızlı, Çin Ateş Topu vb. Triwizard Turnuvası'nda ejderha ile karşılaşma vardır.",
+      "keywords": ["ejderha", "dragon", "ateş", "büyük", "Macar", "İsveç", "Çin", "Triwizard"],
+      "enabled": true,
+      "constant": false,
+      "probability": 65
+    },
+    "Basilisk": {
+      "content": "Basilisk, yılan kral ve en tehlikeli yaratıklardan biridir (XXXXX). Gözü ile direkt bakışta ölüm, dolaylı bakışta taşlaşma yaratır. Slytherin'in Sırrı'nda Basilisk kullanılmıştır. Horozun öttüğü ses onu öldürür. Zehri Horcrux'ları yok edebilir.",
+      "keywords": ["Basilisk", "yılan", "zehir", "taşlaşma", "gözlüğü", "Slytherin's Monster"],
+      "enabled": true,
+      "constant": false,
+      "probability": 75
+    },
+    "Forbidden Forest": {
+      "content": "Yasak Orman, Hogwarts'ın yanındaki karanlık ve tehlikeli orman alanıdır. Acromantula'lar, Thestrals ve diğer tehlikeli yaratıklar yaşarlar. Öğrencilerin girişi yasaktır (cezası Slytherin'de kalışı kaldırmak). Hagrid'in bazı dersleri burada gerçekleşir.",
+      "keywords": ["Yasak Orman", "Forbidden Forest", "orman", "tehlikeli", "yaratık"],
+      "enabled": true,
+      "constant": false,
+      "probability": 60
+    },
+    "Gringotts": {
+      "content": "Gringotts Büyü Bankası, cücelerin işlettiği büyü dünyasının ana bankasıdır. Yüksek güvenlikli kıyafetler vardır ve bir ejderha tarafından korunur. Voldemort'un Horcrux'larından biri Gringotts'ta saklanmıştır. Harry Potter'ın mirası burada tutulur.",
+      "keywords": ["Gringotts", "banka", "hazine", "cüce", "ejderha", "Horcrux"],
+      "enabled": true,
+      "constant": false,
+      "probability": 55
+    },
+    "Ministry of Magic": {
+      "content": "Büyü Bakanlığı, büyü dünyasının hükümetidir. Deneyimli bir Minister tarafından yönetilir. Auror'lar (büyü polisi) burada çalışır. Voldemort'un yükselişi sırasında Bakanlık'ın içine sızmaya çalışır. Dementors, Azkaban Hapishanesi'nin koruyucularıdır.",
+      "keywords": ["Bakanlık", "Ministry", "Auror", "polis", "Dementor", "Azkaban"],
+      "enabled": true,
+      "constant": false,
+      "probability": 50
+    }
+  }
+}

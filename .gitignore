@@ -1,0 +1,36 @@
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+keys/
+*.pem
+*credentials*.json
+*service-account*.json
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Node / Expo
+frontend/node_modules/
+frontend/.expo/
+frontend/dist/
+npm-debug.log*
+yarn-error.log*
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build & logs
+*.log
+.cache/

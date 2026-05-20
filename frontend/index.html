@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hogwarts</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+</head>
+<body>
+<div id="app">
+  <!-- GİRİŞ EKRANI (OVERLAY) -->
+  <div id="screen-intro">
+    <h1>Hogwarts</h1>
+    <p>Yeni bir kader seni bekliyor</p>
+    <input 
+      id="input-name" 
+      type="text" 
+      placeholder="Adını söyle..."
+      autocomplete="off"
+    >
+    <button id="enter-btn">✨ Başla</button>
+  </div>
+
+  <!-- SOHBET EKRANI -->
+  <div id="chat-screen" style="visibility: hidden;">
+    <!-- Üst Topbar (Sabit) -->
+    <div id="topbar">
+      <span class="icon" aria-hidden="true">🏰</span>
+      <div class="header-text">
+        <span class="title">Hogwarts</span>
+        <span class="subtitle" id="header-subtitle">Sihir ve Büyü Akademisi</span>
+      </div>
+      <button id="theme-toggle" title="Tema Değiştir" aria-label="Tema değiştir">🌓</button>
+    </div>
+
+    <!-- Mesajlar Alanı (Kaydırılabilir) -->
+    <div id="messages">
+      <div class="messages-container" id="messages-container">
+        <!-- Mesaj div'leri burada oluşacak -->
+      </div>
+    </div>
+
+    <!-- Alt Input Alanı (Sabit) -->
+    <div id="input-area">
+      <div class="input-container">
+        <form id="chat-form">
+          <textarea 
+            id="message-textarea" 
+            placeholder="Mesajını gönder..."
+            rows="1"
+          ></textarea>
+          <button type="submit" id="chat-submit">➤ Gönder</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

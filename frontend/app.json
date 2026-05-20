@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Hogwarts",
+    "slug": "hpgwarts-frontend",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android", "web"],
+    "scheme": "hpgwarts",
+    "android": {
+      "softwareKeyboardLayoutMode": "resize"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

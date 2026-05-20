@@ -1,0 +1,109 @@
+[
+  {
+    "id": "potions-class",
+    "name": "İksir Sınıfı",
+    "description": "Hogwarts'ın bodrum katında, soğuk ve loş bir sınıf. Duvarlarda iksir malzemeleri asılı.",
+    "background_url": "/assets/locations/potions-class.jpg",
+    "lore_context": "Snape'in kalesi. Hogwarts bodrum katında, soğuk ve nemli. Duvarlarda korunmuş hayvan parçaları ve iksir malzemeleri asılı şişeler var. Kazan kokusu her yeri kaplamış.",
+    "characters_present": [
+      "snape"
+    ]
+  },
+  {
+    "id": "library",
+    "name": "Kütüphane",
+    "description": "Geniş ve sessiz. Binlerce büyü kitabı var.",
+    "background_url": "/assets/locations/library.jpg",
+    "lore_context": "Hogwarts kütüphanesi. Binlerce büyü kitabı raflarda dizili. Yasaklı bölüm demir parmaklıklarla ayrılmış, özel izin gerektirir. Madam Pince sessizliği korur.",
+    "characters_present": [
+      "hermione"
+    ]
+  },
+  {
+    "id": "great-hall",
+    "name": "Büyük Salon",
+    "description": "Hogwarts'ın ana yemek salonu. Tavan büyülü, gökyüzünü yansıtır.",
+    "background_url": "/assets/locations/great-hall.jpg",
+    "lore_context": "Dört koğuşun ayrı masaları var. Tavan büyülü olup dışarıdaki gökyüzünü yansıtır. Sabah, öğle ve akşam yemeklerinde öğrenciler burada toplanır. Öğretmenler yüksek masada oturur.",
+    "characters_present": [
+      "hermione",
+      "ron",
+      "dumbledore",
+      "hagrid",
+      "draco"
+    ]
+  },
+  {
+    "id": "gryffindor-common-room",
+    "name": "Gryffindor Ortak Odası",
+    "description": "Aslan Kulesi'ndeki sıcak ve şömineli oda.",
+    "background_url": "/assets/locations/gryffindor-common-room.jpg",
+    "lore_context": "Aslan Kulesi'nde, Fat Lady portresinin arkasında. Kırmızı ve altın tonlarında döşenmiş. Şömine her zaman yanar. Sadece şifreyi bilenler girebilir.",
+    "characters_present": [
+      "hermione",
+      "ron"
+    ]
+  },
+  {
+    "id": "slytherin-common-room",
+    "name": "Slytherin Ortak Odası",
+    "description": "Göl altında, soğuk ve yeşil ışıklı gizli oda.",
+    "background_url": "/assets/locations/slytherin-common-room.jpg",
+    "lore_context": "Hogwarts'ın bodrum katında, göl altında. Yeşil ışık süzülür pencerelerden. Soğuk, taş duvarlı, yılan motifleriyle süslenmiş. Sadece Slytherin öğrencileri girer.",
+    "characters_present": [
+      "draco"
+    ]
+  },
+  {
+    "id": "headmaster-office",
+    "name": "Baş Öğretmen Makamı",
+    "description": "Kule katında, konuşan portrelerin çevrelediği dairesel oda.",
+    "background_url": "/assets/locations/headmaster-office.jpg",
+    "lore_context": "Taş heykel aslan muhafız eder. Sözdizimli merdivende çıkılır. Dairesel oda, önceki baş öğretmenlerin konuşan portreleriyle çevrili. Fawkes'ın tünediği yer.",
+    "characters_present": [
+      "dumbledore"
+    ]
+  },
+  {
+    "id": "hagrids-hut",
+    "name": "Hagrid'in Kulübesi",
+    "description": "Yasak Orman'ın kenarında taş kulübe. Her zaman çay var.",
+    "background_url": "/assets/locations/hagrids-hut.jpg",
+    "lore_context": "Hogwarts bahçesinin kenarında, Yasak Orman'a yakın taş kulübe. Her zaman çay ve kek var. Devasa yataklar ve sandalyeler. Garip yaratık sesleri duyulur.",
+    "characters_present": [
+      "hagrid"
+    ]
+  },
+  {
+    "id": "hogwarts-corridors",
+    "name": "Hogwarts Koridorları",
+    "description": "Hareketli merdivenler, gizli geçitler, konuşan portrelerin dolduğu koridorlar.",
+    "background_url": "/assets/locations/hogwarts-corridors.jpg",
+    "lore_context": "Yüzlerce merdiven var, çoğu hareket eder. Gizli geçitler, kaybolmuş odalar. Konuşan portrelerin koridorları. Filch ve Mrs. Norris devriye gezer.",
+    "characters_present": [
+      "snape",
+      "draco",
+      "dumbledore"
+    ]
+  },
+  {
+    "id": "quidditch-pitch",
+    "name": "Quidditch Sahası",
+    "description": "Hogwarts'ın geniş çim alanı, seyirci kuleleriyle çevrili.",
+    "background_url": "/assets/locations/quidditch-pitch.jpg",
+    "lore_context": "Hogwarts'ın büyük açık hava Quidditch alanı. Üç çemberi olan iki kale direği. Yüksek seyirci kuleleri. Maç günleri tüm okul buraya gelir.",
+    "characters_present": [
+      "ron"
+    ]
+  },
+  {
+    "id": "forbidden-forest",
+    "name": "Yasak Orman",
+    "description": "Hogwarts'ın yanındaki karanlık ve tehlikeli orman.",
+    "background_url": "/assets/locations/forbidden-forest.jpg",
+    "lore_context": "Öğrencilerin girmesi yasak. Centaurlar, Acromantulalar, Thestraller ve daha pek çok tehlikeli yaratık barınır. Hagrid bazen buraya gider.",
+    "characters_present": [
+      "hagrid"
+    ]
+  }
+]
