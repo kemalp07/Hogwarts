@@ -1,13 +1,53 @@
-from fastapi import APIRouter, HTTPException, Request, Query
+from typing import Optional
+
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 import os
 import uuid
 import json
 from ..services.prompt_builder import build_prompt
+from ..services.memory_service import generate_summary, get_memories, save_memory
 from ..services.vertex_ai import stream_vertex_ai
 from ..db.supabase_client import insert_message, supabase
 
 router = APIRouter()
+
+MAX_HISTORY_MESSAGES = 30
+
+
+def _normalize_history_role(role: str) -> Optional[str]:
+    if role in ("assistant", "ai"):
+        return "assistant"
+    if role == "user":
+        return "user"
+    return None
+
+
+def _merge_history_and_current(history: list, current_user_content: str) -> list[dict]:
+    """Merge client history with the current user turn; dedupe trailing user message."""
+    merged: list[dict] = []
+
+    for item in history or []:
+        if not isinstance(item, dict):
+            continue
+        role = _normalize_history_role(str(item.get("role", "")))
+        if role is None:
+            continue
+        content = (item.get("content") or item.get("text") or "").strip()
+        if not content:
+            continue
+        merged.append({"role": role, "content": content})
+
+    current = (current_user_content or "").strip()
+    if current:
+        if not (
+            merged
+            and merged[-1]["role"] == "user"
+            and merged[-1]["content"] == current
+        ):
+            merged.append({"role": "user", "content": current})
+
+    return merged[-MAX_HISTORY_MESSAGES:]
 
 
 def detect_character(text: str) -> str:
@@ -76,9 +116,11 @@ async def chat_endpoint(request: Request):
     - character_id: str (default: "hogwarts-narrator")
     - location_id: str (default: "great-hall")
     - user_name: str (default: "Öğrenci")
+    - history: list[dict] (optional) prior turns [{"role": "user"|"assistant", "content": "..."}]
     """
     body = await request.json()
     message = body.get("message", "")
+    history = body.get("history") or []
     session_id = body.get("session_id") or str(uuid.uuid4())
     character_id = body.get("character_id") or "hogwarts-narrator"
     location_id = body.get("location_id") or "great-hall"
@@ -92,10 +134,36 @@ async def chat_endpoint(request: Request):
         f"{user_name} adlı oyuncuyu hikâyeye davet et. Tek bir hocanın ilk şahısından sürekli konuşma."
     )
 
-    # Build messages for the model. We pass the current user message as the messages list.
-    messages_for_model = await build_prompt(user_name=user_name, character_id=character_id, location_id=location_id, messages=[{"role": "user", "content": user_message_for_model}], memories=[])
+    conversation_messages = _merge_history_and_current(history, user_message_for_model)
+    conversation_for_memory = _merge_history_and_current(history, message)
+    memories = await get_memories(session_id)
+
+    messages_for_model = await build_prompt(
+        user_name=user_name,
+        character_id=character_id,
+        location_id=location_id,
+        messages=conversation_messages,
+        memories=memories,
+    )
 
     model = body.get("model") or os.getenv("VERTEX_AI_MODEL", "gemini-2.0-flash-001")
+    background_tasks = BackgroundTasks()
+    memory_state = {
+        "full_text": "",
+        "conversation": conversation_for_memory,
+    }
+
+    async def persist_memory_after_response(sid: str, char_id: str, state: dict):
+        full_text = str(state.get("full_text") or "").strip()
+        if len(full_text) <= 200:
+            return
+
+        conversation_for_summary = list(state.get("conversation") or [])
+        conversation_for_summary.append({"role": "assistant", "content": full_text})
+
+        summary = await generate_summary(conversation_for_summary)
+        if summary.strip():
+            await save_memory(sid, char_id, summary.strip())
 
     async def save_messages(sid: str, user_text: str, assistant_text: str):
         try:
@@ -145,11 +213,14 @@ async def chat_endpoint(request: Request):
             payload = json.dumps({"type": "chunk", "text": stub})
             yield f"data: {payload}\n\n"
 
+        memory_state["full_text"] = full_text
         char_name = detect_character(full_text)
         await save_messages(session_id, message, full_text)
 
         done = json.dumps({"type": "done", "character_name": char_name})
         yield f"data: {done}\n\n"
+
+    background_tasks.add_task(persist_memory_after_response, session_id, character_id, memory_state)
 
     return StreamingResponse(
         generate(),
@@ -158,4 +229,5 @@ async def chat_endpoint(request: Request):
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
         },
+        background=background_tasks,
     )

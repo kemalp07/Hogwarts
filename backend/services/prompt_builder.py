@@ -38,7 +38,7 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 
     memories_text = ""
     if memories:
-        memories_text = "Önceki konuşma notları:\n" + "\n".join(f"- {m}" for m in memories)
+        memories_text = "## Önceki konuşmalardan hafıza:\n" + "\n".join(f"- {m}" for m in memories)
 
     system_content = "\n\n".join(
         filter(

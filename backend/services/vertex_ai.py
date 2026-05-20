@@ -25,7 +25,7 @@ def _resolve_credential_source() -> Optional[str]:
         or os.getenv("VERTEX_AI_CREDENTIALS")
     )
     if candidate:
-        return candidate.strip()
+        return candidate.strip().strip('"').strip("'")
     return None
 
 
@@ -118,12 +118,13 @@ def _split_system_and_contents(messages: List[Dict[str, Any]]) -> Tuple[Optional
 def _build_vertex_payload(
     messages: List[Dict[str, Any]],
     model: Optional[str] = None,
-    temperature: float = 0.7,
+    temperature: float = 0.85,
 ) -> Tuple[Dict[str, Any], service_account.Credentials, str, str, str]:
     system_text, contents = _split_system_and_contents(messages)
     credentials, project_id = _load_service_account()
     location = os.getenv("VERTEX_AI_LOCATION", DEFAULT_LOCATION)
     model_name = model or os.getenv("VERTEX_AI_MODEL", DEFAULT_MODEL)
+    max_tokens = int(os.getenv("VERTEX_AI_MAX_TOKENS", "2048"))
 
     if not credentials or not project_id:
         raise RuntimeError(
@@ -138,7 +139,8 @@ def _build_vertex_payload(
         "contents": contents,
         "generationConfig": {
             "temperature": temperature,
-            "maxOutputTokens": 1024,
+            "maxOutputTokens": max_tokens,
+            "candidateCount": 1,
         },
     }
 
@@ -169,9 +171,14 @@ async def stream_vertex_ai(messages: List[Dict[str, Any]], model: Optional[str] 
             return
 
     access_token = credentials.token
+    api_host = (
+        "https://aiplatform.googleapis.com"
+        if location == "global"
+        else f"https://{location}-aiplatform.googleapis.com"
+    )
     url = (
-        f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}"
-        f"/locations/{location}/publishers/google/models/{model_name}:streamGenerateContent?alt=sse"
+        f"{api_host}/v1/projects/{project_id}/locations/{location}"
+        f"/publishers/google/models/{model_name}:streamGenerateContent?alt=sse"
     )
     headers = {
         "Authorization": f"Bearer {access_token}",

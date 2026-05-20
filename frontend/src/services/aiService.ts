@@ -1,5 +1,6 @@
 // Assembles final prompt and calls the AI API
 import characterCardData from '../data/wizarding-world-spec_v2.json';
+import { getRelevantLore, hasRelevantLore } from './lorebook';
 
 export type Message = { id: string; role: 'user' | 'ai'; text: string };
 
@@ -50,11 +51,20 @@ export async function sendMessage(
 ): Promise<string> {
   try {
     let systemPrompt = buildFinalSystemPrompt(userName);
+    const recentMessages = messages.slice(-3).map((message) => message.text);
 
     if (house) {
       systemPrompt += `\n\nIMPORTANT: The user has been sorted into ${house}.
 Always refer to them as a ${house} student.
 Their common room, housemates, and house traits should be reflected throughout the story.`;
+    }
+
+    if (hasRelevantLore(recentMessages)) {
+      const worldContext = getRelevantLore(recentMessages, 750);
+
+      if (worldContext) {
+        systemPrompt += `\n\nWorld context:\n${worldContext}`;
+      }
     }
 
     console.log('Final system prompt:', systemPrompt);
