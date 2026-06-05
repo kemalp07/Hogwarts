@@ -14,10 +14,12 @@ type CharacterCardData = {
 
 const card = characterCardData as CharacterCardData;
 
-const SORTING_HAT_SCENE = `Büyük Salon, sen öne adım atarken sessizleşir.
-Profesör McGonagall kadim Sıralama Şapkası'nı başına koyar...
-"Hmm," diye mırıldanır Şapka kulağında. "Cesaret görüyorum, zeka ve sadakat...
-Ama seni nereye koymalıyım?"
+const SORTING_HAT_SCENE = `Hogwarts Ekspresi bugün ilk kez yolculuk yapıyor — en azından senin için. 1991 yılı, Eylül'ün ilk günü. Tren İskoçya'nın sisli dağlarında ilerlerken pencereden uzaklara bakıyorsun. Bugün her şey değişecek.
+
+Saatler sonra dev meşe kapılardan içeri adım atıyorsun. Büyük Salon'un büyülü tavanında yıldızlar parlıyor, yüzlerce mum havada asılı duruyor. Diğer birinci sınıf öğrencileriyle birlikte uzun masaların önünde sıralanıyorsunuz.
+
+Profesör McGonagall elinde eski, yıpranmış bir şapkayla öne çıkıyor.
+
 Hangi ev seni çağırıyor?`;
 
 function hasSortingHatScene(text: string): boolean {

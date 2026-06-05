@@ -1,0 +1,394 @@
+[
+  {
+    "name": "Harry Potter",
+    "tag": "HARRY",
+    "house": "Gryffindor",
+    "year": 1,
+    "role": "student",
+    "avatar": "harry"
+  },
+  {
+    "name": "Ron Weasley",
+    "tag": "RON",
+    "house": "Gryffindor",
+    "year": 1,
+    "role": "student",
+    "avatar": "ron"
+  },
+  {
+    "name": "Hermione Granger",
+    "tag": "HERMIONE",
+    "house": "Gryffindor",
+    "year": 1,
+    "role": "student",
+    "avatar": "hermione"
+  },
+  {
+    "name": "Draco Malfoy",
+    "tag": "DRACO",
+    "house": "Slytherin",
+    "year": 1,
+    "role": "student",
+    "avatar": "draco"
+  },
+  {
+    "name": "Neville Longbottom",
+    "tag": "NEVILLE",
+    "house": "Gryffindor",
+    "year": 1,
+    "role": "student",
+    "avatar": "neville"
+  },
+  {
+    "name": "Dean Thomas",
+    "tag": "DEAN",
+    "house": "Gryffindor",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Seamus Finnigan",
+    "tag": "SEAMUS",
+    "house": "Gryffindor",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Lavender Brown",
+    "tag": "LAVENDER",
+    "house": "Gryffindor",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Parvati Patil",
+    "tag": "PARVATI",
+    "house": "Gryffindor",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Padma Patil",
+    "tag": "PADMA",
+    "house": "Ravenclaw",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Pansy Parkinson",
+    "tag": "PANSY",
+    "house": "Slytherin",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Vincent Crabbe",
+    "tag": "CRABBE",
+    "house": "Slytherin",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Gregory Goyle",
+    "tag": "GOYLE",
+    "house": "Slytherin",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Blaise Zabini",
+    "tag": "BLAISE",
+    "house": "Slytherin",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Justin Finch-Fletchley",
+    "tag": "JUSTIN",
+    "house": "Hufflepuff",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Hannah Abbott",
+    "tag": "HANNAH",
+    "house": "Hufflepuff",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Susan Bones",
+    "tag": "SUSAN",
+    "house": "Hufflepuff",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Ernie Macmillan",
+    "tag": "ERNIE",
+    "house": "Hufflepuff",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Terry Boot",
+    "tag": "TERRY",
+    "house": "Ravenclaw",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Anthony Goldstein",
+    "tag": "ANTHONY",
+    "house": "Ravenclaw",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Mandy Brocklehurst",
+    "tag": "MANDY",
+    "house": "Ravenclaw",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Lisa Turpin",
+    "tag": "LISA",
+    "house": "Ravenclaw",
+    "year": 1,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Albus Dumbledore",
+    "tag": "DUMBLEDORE",
+    "house": null,
+    "year": null,
+    "role": "professor",
+    "avatar": "dumbledore"
+  },
+  {
+    "name": "Minerva McGonagall",
+    "tag": "MCGONAGALL",
+    "house": "Gryffindor",
+    "year": null,
+    "role": "professor",
+    "avatar": "mcgonagall"
+  },
+  {
+    "name": "Severus Snape",
+    "tag": "SNAPE",
+    "house": "Slytherin",
+    "year": null,
+    "role": "professor",
+    "avatar": "snape"
+  },
+  {
+    "name": "Quirinus Quirrell",
+    "tag": "QUIRRELL",
+    "house": "Ravenclaw",
+    "year": null,
+    "role": "professor",
+    "avatar": null
+  },
+  {
+    "name": "Filius Flitwick",
+    "tag": "FLITWICK",
+    "house": "Ravenclaw",
+    "year": null,
+    "role": "professor",
+    "avatar": null
+  },
+  {
+    "name": "Pomona Sprout",
+    "tag": "SPROUT",
+    "house": "Hufflepuff",
+    "year": null,
+    "role": "professor",
+    "avatar": null
+  },
+  {
+    "name": "Cuthbert Binns",
+    "tag": "BINNS",
+    "house": null,
+    "year": null,
+    "role": "professor",
+    "avatar": null
+  },
+  {
+    "name": "Madam Hooch",
+    "tag": "HOOCH",
+    "house": null,
+    "year": null,
+    "role": "professor",
+    "avatar": null
+  },
+  {
+    "name": "Sybill Trelawney",
+    "tag": "TRELAWNEY",
+    "house": null,
+    "year": null,
+    "role": "professor",
+    "avatar": "trelawney"
+  },
+  {
+    "name": "Rubeus Hagrid",
+    "tag": "HAGRID",
+    "house": "Gryffindor",
+    "year": null,
+    "role": "professor",
+    "avatar": "hagrid"
+  },
+  {
+    "name": "Argus Filch",
+    "tag": "FILCH",
+    "house": null,
+    "year": null,
+    "role": "staff",
+    "avatar": null
+  },
+  {
+    "name": "Poppy Pomfrey",
+    "tag": "POMFREY",
+    "house": null,
+    "year": null,
+    "role": "staff",
+    "avatar": null
+  },
+  {
+    "name": "Gilderoy Lockhart",
+    "tag": "LOCKHART",
+    "house": null,
+    "year": null,
+    "role": "professor",
+    "avatar": "lockhart"
+  },
+  {
+    "name": "Fred Weasley",
+    "tag": "FRED",
+    "house": "Gryffindor",
+    "year": 3,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "George Weasley",
+    "tag": "GEORGE",
+    "house": "Gryffindor",
+    "year": 3,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Percy Weasley",
+    "tag": "PERCY",
+    "house": "Gryffindor",
+    "year": 5,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Oliver Wood",
+    "tag": "OLIVER",
+    "house": "Gryffindor",
+    "year": 5,
+    "role": "student",
+    "avatar": "oliver_wood"
+  },
+  {
+    "name": "Cedric Diggory",
+    "tag": "CEDRIC",
+    "house": "Hufflepuff",
+    "year": 3,
+    "role": "student",
+    "avatar": "cedric"
+  },
+  {
+    "name": "Angelina Johnson",
+    "tag": "ANGELINA",
+    "house": "Gryffindor",
+    "year": 3,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Alicia Spinnet",
+    "tag": "ALICIA",
+    "house": "Gryffindor",
+    "year": 3,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Katie Bell",
+    "tag": "KATIE",
+    "house": "Gryffindor",
+    "year": 3,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Lee Jordan",
+    "tag": "LEE",
+    "house": "Gryffindor",
+    "year": 3,
+    "role": "student",
+    "avatar": null
+  },
+  {
+    "name": "Nearly Headless Nick",
+    "tag": "NICK",
+    "house": "Gryffindor",
+    "year": null,
+    "role": "ghost",
+    "avatar": null
+  },
+  {
+    "name": "Fat Friar",
+    "tag": "FAT_FRIAR",
+    "house": "Hufflepuff",
+    "year": null,
+    "role": "ghost",
+    "avatar": null
+  },
+  {
+    "name": "Bloody Baron",
+    "tag": "BLOODY_BARON",
+    "house": "Slytherin",
+    "year": null,
+    "role": "ghost",
+    "avatar": null
+  },
+  {
+    "name": "Grey Lady",
+    "tag": "GREY_LADY",
+    "house": "Ravenclaw",
+    "year": null,
+    "role": "ghost",
+    "avatar": null
+  },
+  {
+    "name": "Peeves",
+    "tag": "PEEVES",
+    "house": null,
+    "year": null,
+    "role": "ghost",
+    "avatar": null
+  }
+]
