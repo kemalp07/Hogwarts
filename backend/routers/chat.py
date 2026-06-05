@@ -6,7 +6,7 @@ import os
 import uuid
 import json
 from ..services.prompt_builder import build_prompt
-from ..services.memory_service import generate_summary, get_memories, save_memory
+from ..services.memory_service import generate_summary, get_memories, maybe_summarize_and_compress, save_memory
 from ..services.vertex_ai import stream_vertex_ai
 from ..db.supabase_client import insert_message, supabase
 import traceback
@@ -167,6 +167,8 @@ async def chat_endpoint(request: Request):
         summary = await generate_summary(conversation_for_summary)
         if summary.strip():
             await save_memory(sid, char_id, summary.strip())
+
+        await maybe_summarize_and_compress(sid, char_id, conversation_for_summary)
 
     async def save_messages(sid: str, user_text: str, assistant_text: str):
         try:
