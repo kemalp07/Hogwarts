@@ -1,5 +1,4 @@
 // Assembles final prompt and calls the AI API
-import { getRelevantLore, hasRelevantLore } from './lorebook';
 
 export type Message = { id: string; role: 'user' | 'ai'; text: string };
 
@@ -22,8 +21,6 @@ export async function sendMessage(
   house: string = '',
 ): Promise<string> {
   try {
-    const recentMessages = messages.slice(-3).map((message) => message.text);
-
     const history: ApiMessage[] = messages
       .slice(-20)
       .map((m) => ({
