@@ -397,8 +397,11 @@ const {
 
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
-  const [showHouseSelection, setShowHouseSelection] = useState(
-    () => !localStorage.getItem('hp_house')
+  const [showHouseSelection, setShowHouseSelection] = useState<boolean>(
+    () => {
+      const savedHouse = localStorage.getItem('hp_house');
+      return !savedHouse;
+    }
   );
   const [tipIndex, setTipIndex] = useState(0);
 
@@ -421,7 +424,8 @@ const {
   }, []);
 
   useEffect(() => {
-    if (!userName || !sessionId || messages.length > 0) return;
+    if (!userName || !sessionId) return;
+    if (messages.length > 0) return;
 
     const loadHistory = async () => {
       try {
@@ -429,13 +433,20 @@ const {
         if (!res.ok) return;
         const data = await res.json();
         const msgs = data.messages || [];
-        if (msgs.length === 0) return;
+        
+        if (msgs.length === 0) {
+          // No history — trigger opening scene
+          setShowHouseSelection(false);
+          return;
+        }
 
-        const loaded: Message[] = msgs.map((m: any) => createMessage(
-          m.role === 'user' ? 'user' : 'ai',
-          m.content
-        ));
+        const loaded: Message[] = msgs.map((m: any) => ({
+          id: Math.random().toString(36).slice(2),
+          role: m.role === 'user' ? 'user' : 'ai',
+          text: m.content,
+        }));
         setMessages(loaded);
+        setShowHouseSelection(false);
       } catch (e) {
         console.error('History load error:', e);
       }
@@ -498,6 +509,7 @@ const {
   };
 
   const handleHouseSelect = async (house: string) => {
+    localStorage.setItem('hp_house', house);
     setHogwartsHouse(house);
     setShowHouseSelection(false);
 

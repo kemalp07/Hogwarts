@@ -7,6 +7,8 @@ import {
   Pressable,
   SafeAreaView,
   Platform,
+  ImageBackground,
+  Image,
 } from 'react-native';
 import { useAppContext } from '../context/AppContext';
 
@@ -17,6 +19,15 @@ type OnboardingScreenProps = {
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   const [inputValue, setInputValue] = useState('');
   const { setUserName } = useAppContext();
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const link = document.createElement('link');
+      link.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+  }, []);
 
   useEffect(() => {
     if (localStorage.getItem('hp_user_name')) {
@@ -41,10 +52,16 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.iconCircle}>
-          <Text style={styles.icon}>⚡</Text>
-        </View>
+      <ImageBackground 
+        source={require('../../assets/hogwarts_clean.png')} 
+        style={styles.backgroundImage}
+        imageStyle={{ opacity: 0.4 }}
+      >
+        <View style={styles.content}>
+        <Image 
+          source={require('../../assets/hogwarts_crest.png')} 
+          style={styles.crestImage}
+        />
 
         <Text style={styles.title}>Hogwarts'a Hoş Geldin</Text>
 
@@ -53,7 +70,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
         <TextInput
           style={[styles.input, WEB_INPUT_RESET]}
           placeholder="Adını gir..."
-          placeholderTextColor="#AAA"
+          placeholderTextColor="rgba(245, 220, 180, 0.4)"
           value={inputValue}
           onChangeText={setInputValue}
           editable={true}
@@ -77,6 +94,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
           </Text>
         </Pressable>
       </View>
+      </ImageBackground>
     </SafeAreaView>
   );
 };
@@ -84,7 +102,12 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0a0604',
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   content: {
     flex: 1,
@@ -92,64 +115,66 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#D97706',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  icon: {
-    fontSize: 22,
+  crestImage: {
+    width: 350,
+    height: 350,
+    marginBottom: 175,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '500',
+    fontSize: 32,
+    fontWeight: '600',
     textAlign: 'center',
-    color: '#000',
+    color: '#F5E6C8',
+    fontFamily: 'Cinzel, serif',
+    letterSpacing: 3,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13,
-    color: '#999',
+    fontSize: 14,
+    color: 'rgba(245, 220, 180, 0.55)',
     textAlign: 'center',
     marginTop: 4,
-    marginBottom: 20,
+    marginBottom: 24,
+    fontStyle: 'italic',
+    letterSpacing: 1,
   },
   input: {
     width: '72%',
     maxWidth: 360,
     alignSelf: 'center',
-    height: 44,
-    borderWidth: 0.5,
-    borderColor: '#D1D1D1',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 15,
+    height: 48,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 220, 180, 0.25)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#F5E6C8',
     textAlign: 'center',
     marginBottom: 12,
-    color: '#000',
   },
   button: {
     width: '72%',
     maxWidth: 360,
     alignSelf: 'center',
-    height: 44,
-    backgroundColor: '#D97706',
-    borderRadius: 10,
+    height: 48,
+    backgroundColor: 'rgba(120, 50, 8, 0.9)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 220, 180, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   buttonDisabled: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: 'rgba(60, 40, 10, 0.5)',
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: '#F5E6C8',
     fontSize: 16,
     fontWeight: '600',
+    letterSpacing: 2,
   },
   buttonTextDisabled: {
-    color: '#999',
+    color: 'rgba(245, 220, 180, 0.4)',
   },
 });

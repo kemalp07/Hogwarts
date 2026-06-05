@@ -315,6 +315,29 @@ Every response MUST use these tags. No exceptions.
 [MCGONAGALL] Use for Professor McGonagall's dialogue and reactions.
 [UMBRIDGE] Use for Dolores Umbridge's dialogue and reactions.
 [VOLDEMORT] Use for Voldemort's dialogue and reactions.
+[NICK] Use for Nearly Headless Nick's dialogue and reactions.
+[FRED] Use for Fred Weasley's dialogue and reactions.
+[GEORGE] Use for George Weasley's dialogue and reactions.
+[PERCY] Use for Percy Weasley's dialogue and reactions.
+[QUIRRELL] Use for Professor Quirrell's dialogue and reactions.
+[FLITWICK] Use for Professor Flitwick's dialogue and reactions.
+[SPROUT] Use for Professor Sprout's dialogue and reactions.
+[HOOCH] Use for Madam Hooch's dialogue and reactions.
+[FILCH] Use for Argus Filch's dialogue and reactions.
+[POMFREY] Use for Madam Pomfrey's dialogue and reactions.
+[PEEVES] Use for Peeves the Poltergeist's dialogue and reactions.
+[CEDRIC] Use for Cedric Diggory's dialogue and reactions.
+[OLIVER] Use for Oliver Wood's dialogue and reactions.
+[NEVILLE] Use for Neville Longbottom's dialogue and reactions.
+[LUNA] Use for Luna Lovegood's dialogue and reactions.
+[GINNY] Use for Ginny Weasley's dialogue and reactions.
+[DEAN] Use for Dean Thomas's dialogue and reactions.
+[SEAMUS] Use for Seamus Finnigan's dialogue and reactions.
+[LAVENDER] Use for Lavender Brown's dialogue and reactions.
+[PANSY] Use for Pansy Parkinson's dialogue and reactions.
+[CRABBE] Use for Vincent Crabbe's dialogue and reactions.
+[GOYLE] Use for Gregory Goyle's dialogue and reactions.
+[BLAISE] Use for Blaise Zabini's dialogue and reactions.
 [CHARACTER:Name] Use this for any other character not listed above.
 
 Rules:
