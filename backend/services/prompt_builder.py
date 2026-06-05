@@ -187,13 +187,13 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
     memories_text = _format_memories(memories)
 
     system_parts = [
-        f"Aktif karakter: {character.get('name', '')}",
-        f"Kişilik: {character.get('personality', '')}",
-        f"Konuşma tarzı: {character.get('speech_style', '')}",
-        character.get("base_prompt", ""),
-        f"Aktif mekan: {location.get('name', '')}",
-        location.get("lore_context", ""),
         spec_prompt,
+        f"## Active Character: {character.get('name', '')}",
+        f"Personality: {character.get('personality', '')}",
+        f"Speech style: {character.get('speech_style', '')}",
+        character.get("base_prompt", ""),
+        f"Active location: {location.get('name', '')}",
+        location.get("lore_context", ""),
         lorebook_text,
         memories_text,
     ]
