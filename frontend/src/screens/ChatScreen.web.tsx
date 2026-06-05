@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
   FlatList,
   KeyboardAvoidingView,
   NativeSyntheticEvent,
@@ -35,6 +36,59 @@ const WEB_INPUT_RESET =
     ? ({ outlineWidth: 0, outlineStyle: 'none', boxShadow: 'none' } as any)
     : undefined;
 
+const CHARACTER_AVATARS: Record<string, any> = {
+  NARRATOR: require('../../assets/characters/sorting_hat.png'),
+  'Harry Potter': require('../../assets/characters/harry.png'),
+  'Hermione Granger': require('../../assets/characters/hermione.png'),
+  'Ron Weasley': require('../../assets/characters/ron.png'),
+  'Severus Snape': require('../../assets/characters/snape.png'),
+  'Albus Dumbledore': require('../../assets/characters/dumbledore.png'),
+  'Draco Malfoy': require('../../assets/characters/draco.png'),
+  'Rubeus Hagrid': require('../../assets/characters/hagrid.png'),
+  'Minerva McGonagall': require('../../assets/characters/mcgonagall.png'),
+  'Dolores Umbridge': require('../../assets/characters/umbridge.png'),
+  'Luna Lovegood': require('../../assets/characters/luna.png'),
+  'Ginny Weasley': require('../../assets/characters/ginny.png'),
+  'Neville Longbottom': require('../../assets/characters/neville.png'),
+  'Voldemort': require('../../assets/characters/voldemort.png'),
+  'Bellatrix Lestrange': require('../../assets/characters/bellatrix.png'),
+  'Lucius Malfoy': require('../../assets/characters/lucius.png'),
+  'Cedric Diggory': require('../../assets/characters/cedric.png'),
+  'Fleur Delacour': require('../../assets/characters/fleur.png'),
+  'Sıralama Şapkası': require('../../assets/characters/sorting_hat.png'),
+  'Professor Trelawney': require('../../assets/characters/trelawney.png'),
+  'Oliver Wood': require('../../assets/characters/oliver_wood.png'),
+  'Gilderoy Lockhart': require('../../assets/characters/lockhart.png'),
+};
+
+const TAG_AVATARS: Record<string, any> = {
+  NARRATOR: require('../../assets/characters/sorting_hat.png'),
+  HARRY: require('../../assets/characters/harry.png'),
+  HERMIONE: require('../../assets/characters/hermione.png'),
+  RON: require('../../assets/characters/ron.png'),
+  SNAPE: require('../../assets/characters/snape.png'),
+  DUMBLEDORE: require('../../assets/characters/dumbledore.png'),
+  DRACO: require('../../assets/characters/draco.png'),
+  HAGRID: require('../../assets/characters/hagrid.png'),
+  MCGONAGALL: require('../../assets/characters/mcgonagall.png'),
+  UMBRIDGE: require('../../assets/characters/umbridge.png'),
+  VOLDEMORT: require('../../assets/characters/voldemort.png'),
+};
+
+const TAG_NAMES: Record<string, string> = {
+  NARRATOR: 'Anlatıcı',
+  HARRY: 'Harry Potter',
+  HERMIONE: 'Hermione Granger',
+  RON: 'Ron Weasley',
+  SNAPE: 'Severus Snape',
+  DUMBLEDORE: 'Albus Dumbledore',
+  DRACO: 'Draco Malfoy',
+  HAGRID: 'Rubeus Hagrid',
+  MCGONAGALL: 'Prof. McGonagall',
+  UMBRIDGE: 'Dolores Umbridge',
+  VOLDEMORT: 'Lord Voldemort',
+};
+
 function houseColor(house: string): string {
   switch (house) {
     case 'Gryffindor':
@@ -50,11 +104,12 @@ function houseColor(house: string): string {
   }
 }
 
-function createMessage(role: 'user' | 'ai', text: string): Message {
+function createMessage(role: 'user' | 'ai', text: string, characterName?: string): Message {
   return {
     id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     role,
     text,
+    characterName,
   };
 }
 
@@ -105,6 +160,49 @@ function TypingDots() {
 type MessageBubbleProps = {
   item: Message;
 };
+
+function getCharacterAvatarSource(characterName?: string) {
+  if (!characterName) {
+    return null;
+  }
+
+  return CHARACTER_AVATARS[characterName] || null;
+}
+
+type TaggedBlock = {
+  tag: string;
+  name: string;
+  content: string;
+};
+
+function parseTaggedResponse(text: string): Array<{ tag: string; name: string; content: string }> {
+  const lines = text.split('\n');
+  const blocks: Array<{ tag: string; name: string; content: string }> = [];
+  let currentTag = 'NARRATOR';
+  let currentLines: string[] = [];
+
+  const pushBlock = () => {
+    const content = currentLines.join('\n').trim();
+    if (content) {
+      const name = TAG_NAMES[currentTag] || (currentTag.startsWith('CHARACTER:') ? currentTag.slice(10) : currentTag);
+      blocks.push({ tag: currentTag, name, content });
+    }
+  };
+
+  for (const line of lines) {
+    const tagMatch = line.match(/^\[([^\]]+)\]\s*(.*)/);
+    if (tagMatch) {
+      pushBlock();
+      currentTag = tagMatch[1].trim();
+      currentLines = tagMatch[2] ? [tagMatch[2]] : [];
+    } else {
+      currentLines.push(line);
+    }
+  }
+
+  pushBlock();
+  return blocks;
+}
 
 function parseAIMessage(text: string): React.ReactNode {
   const paragraphs = text.split(/\n\n+/).filter((paragraph) => paragraph.trim() !== '');
@@ -204,9 +302,13 @@ function MessageBubble({ item }: MessageBubbleProps) {
 
   return (
     <View style={styles.aiRow}>
-      <View style={styles.aiAvatar}>
-        <Text style={styles.aiAvatarText}>{NARRATOR_SYMBOL}</Text>
-      </View>
+      {getCharacterAvatarSource(item.characterName) ? (
+        <Image source={getCharacterAvatarSource(item.characterName)} style={styles.aiAvatarImage} />
+      ) : (
+        <View style={styles.aiAvatar}>
+          <Text style={styles.aiAvatarText}>{NARRATOR_SYMBOL}</Text>
+        </View>
+      )}
       <View style={styles.aiBubble}>
         <View style={styles.aiMessageRoot}>{parseAIMessage(item.text)}</View>
       </View>
@@ -277,18 +379,33 @@ export const ChatScreen: React.FC = () => {
       return;
     }
 
-    const nextMessages = [...messages, createMessage('user', trimmed)];
-    setMessages(nextMessages);
-    setInputText('');
-    setInputHeight(MIN_INPUT_HEIGHT);
-    setIsLoading(true);
+    const taggedBlocks = parseTaggedResponse(item.text);
 
-    try {
-      const aiText = await sendAiMessage(nextMessages, userName, hogwartsHouse);
-      setMessages([...nextMessages, createMessage('ai', aiText)]);
-    } catch (error) {
-      console.error('AI Error:', error);
-      setMessages([
+    return (
+      <>
+        {taggedBlocks.map((block, index) => {
+          const avatarSource = TAG_AVATARS[block.tag] || getCharacterAvatarSource(item.characterName) || TAG_AVATARS.NARRATOR;
+
+          return (
+            <View key={`${item.id}-${index}`} style={styles.aiBlockRow}>
+              {avatarSource ? (
+                <Image source={avatarSource} style={styles.aiBlockAvatarImage} />
+              ) : (
+                <View style={styles.aiBlockAvatar}>
+                  <Text style={styles.aiAvatarText}>{NARRATOR_SYMBOL}</Text>
+                </View>
+              )}
+              <View style={styles.aiBlockBody}>
+                <Text style={styles.aiBlockName}>{block.name}</Text>
+                <View style={styles.aiBubble}>
+                  <View style={styles.aiMessageRoot}>{parseAIMessage(block.content)}</View>
+                </View>
+              </View>
+            </View>
+          );
+        })}
+      </>
+    );
         ...nextMessages,
         createMessage('ai', 'Bir şeyler ters gitti, tekrar dener misin?'),
       ]);
@@ -315,7 +432,10 @@ export const ChatScreen: React.FC = () => {
 
     try {
       const response = await sendAiMessage(nextMessages, userName, house);
-      setMessages([...nextMessages, createMessage('ai', response)]);
+      setMessages([
+        ...nextMessages,
+        createMessage('ai', response.text, response.characterName),
+      ]);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -561,14 +681,60 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   aiAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#D97706',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
     backgroundColor: 'rgba(12, 7, 2, 0.92)',
+    flexShrink: 0,
+  },
+  aiBlockRow: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  aiBlockAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(12, 7, 2, 0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    flexShrink: 0,
+  },
+  aiBlockAvatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginRight: 10,
+    flexShrink: 0,
+  },
+  aiBlockBody: {
+    flex: 1,
+    maxWidth: '88%',
+  },
+  aiBlockName: {
+    fontSize: 11,
+    color: '#D4B896',
+    marginBottom: 4,
+    marginLeft: 2,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  aiAvatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
+    marginRight: 8,
     flexShrink: 0,
   },
   aiAvatarText: {

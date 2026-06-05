@@ -48,11 +48,12 @@ function houseColor(house: string): string {
   }
 }
 
-function createMessage(role: 'user' | 'ai', text: string): Message {
+function createMessage(role: 'user' | 'ai', text: string, characterName?: string): Message {
   return {
     id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     role,
     text,
+    characterName,
   };
 }
 
@@ -281,8 +282,11 @@ export const ChatScreen: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const aiText = await sendAiMessage(nextMessages, userName, hogwartsHouse);
-      setMessages([...nextMessages, createMessage('ai', aiText)]);
+      const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse);
+      setMessages([
+        ...nextMessages,
+        createMessage('ai', aiResponse.text, aiResponse.characterName),
+      ]);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -312,7 +316,10 @@ export const ChatScreen: React.FC = () => {
 
     try {
       const response = await sendAiMessage(nextMessages, userName, house);
-      setMessages([...nextMessages, createMessage('ai', response)]);
+      setMessages([
+        ...nextMessages,
+        createMessage('ai', response.text, response.characterName),
+      ]);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([

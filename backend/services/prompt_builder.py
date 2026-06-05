@@ -211,6 +211,28 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 - Build tension gradually — not every scene is calm, occasionally something unusual or mysterious should occur
 - Always end your response with either an open situation or a character doing something that invites the user to react
 - NEVER end with a question directed at the user like "Ne yapmak istersin?" — instead show the world reacting and let the user decide naturally
+
+### RESPONSE FORMAT — MANDATORY:
+Every response MUST use these tags. No exceptions.
+
+[NARRATOR] Use for scene descriptions, atmosphere, actions, environmental details.
+[HARRY] Use for Harry Potter's dialogue and reactions.
+[HERMIONE] Use for Hermione Granger's dialogue and reactions.
+[RON] Use for Ron Weasley's dialogue and reactions.
+[SNAPE] Use for Severus Snape's dialogue and reactions.
+[DUMBLEDORE] Use for Albus Dumbledore's dialogue and reactions.
+[DRACO] Use for Draco Malfoy's dialogue and reactions.
+[HAGRID] Use for Rubeus Hagrid's dialogue and reactions.
+[MCGONAGALL] Use for Professor McGonagall's dialogue and reactions.
+[UMBRIDGE] Use for Dolores Umbridge's dialogue and reactions.
+[VOLDEMORT] Use for Voldemort's dialogue and reactions.
+[CHARACTER:Name] Use this for any other character not listed above.
+
+Rules:
+- Every paragraph must start with a tag
+- Never mix narrator and character in the same paragraph
+- Always put dialogue inside the character's own tag block
+- Never skip the tag even for short reactions
 """
     system_content += proactive_instruction
 

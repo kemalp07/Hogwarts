@@ -1,6 +1,11 @@
 // Assembles final prompt and calls the AI API
 
-export type Message = { id: string; role: 'user' | 'ai'; text: string };
+export type Message = { id: string; role: 'user' | 'ai'; text: string; characterName?: string };
+
+type AIMessageResult = {
+  text: string;
+  characterName?: string;
+};
 
 type ApiMessage = {
   role: 'user' | 'assistant';
@@ -10,6 +15,7 @@ type ApiMessage = {
 type ChatApiResponse = {
   response?: string;
   text?: string;
+  character_name?: string;
 };
 
 // Use the test endpoint in local dev when Vertex credentials may be missing.
@@ -19,7 +25,7 @@ export async function sendMessage(
   messages: Message[],
   userName: string,
   house: string = '',
-): Promise<string> {
+): Promise<AIMessageResult> {
   try {
     const history: ApiMessage[] = messages
       .slice(-20)
@@ -57,11 +63,12 @@ export async function sendMessage(
       if (!text) {
         throw new Error('Empty response from AI API');
       }
-      return text;
+      return { text, characterName: data.character_name };
     }
 
     const raw = await response.text();
     let assembled = '';
+    let characterName = '';
 
     for (const line of raw.split('\n')) {
       if (!line.startsWith('data: ')) {
@@ -74,9 +81,11 @@ export async function sendMessage(
       }
 
       try {
-        const parsed = JSON.parse(dataPart) as { type?: string; text?: string };
+        const parsed = JSON.parse(dataPart) as { type?: string; text?: string; character_name?: string };
         if (parsed.type === 'chunk' && parsed.text) {
           assembled += parsed.text;
+        } else if (parsed.type === 'done' && parsed.character_name) {
+          characterName = parsed.character_name;
         }
       } catch {
         // Ignore malformed SSE chunks.
@@ -87,7 +96,7 @@ export async function sendMessage(
       throw new Error('Empty streaming response from AI API');
     }
 
-    return assembled;
+    return { text: assembled, characterName: characterName || undefined };
   } catch (error) {
     console.error('sendMessage failed:', error);
     throw error;
