@@ -62,17 +62,59 @@ const CHARACTER_AVATARS: Record<string, any> = {
 };
 
 const TAG_AVATARS: Record<string, any> = {
-  NARRATOR: require('../../assets/characters/sorting_hat.png'),
-  HARRY: require('../../assets/characters/harry.png'),
-  HERMIONE: require('../../assets/characters/hermione.png'),
-  RON: require('../../assets/characters/ron.png'),
-  SNAPE: require('../../assets/characters/snape.png'),
-  DUMBLEDORE: require('../../assets/characters/dumbledore.png'),
-  DRACO: require('../../assets/characters/draco.png'),
-  HAGRID: require('../../assets/characters/hagrid.png'),
-  MCGONAGALL: require('../../assets/characters/mcgonagall.png'),
-  UMBRIDGE: require('../../assets/characters/umbridge.png'),
-  VOLDEMORT: require('../../assets/characters/voldemort.png'),
+  'NARRATOR': require('../../assets/characters/sorting_hat.png'),
+  'UNKNOWN': require('../../assets/characters/unknown.png'),
+  'HARRY': require('../../assets/characters/harry.png'),
+  'HERMIONE': require('../../assets/characters/hermione.png'),
+  'RON': require('../../assets/characters/ron.png'),
+  'SNAPE': require('../../assets/characters/snape.png'),
+  'DUMBLEDORE': require('../../assets/characters/dumbledore.png'),
+  'DRACO': require('../../assets/characters/draco.png'),
+  'HAGRID': require('../../assets/characters/hagrid.png'),
+  'MCGONAGALL': require('../../assets/characters/mcgonagall.png'),
+  'UMBRIDGE': require('../../assets/characters/umbridge.png'),
+  'VOLDEMORT': require('../../assets/characters/voldemort.png'),
+  'NEVILLE': require('../../assets/characters/neville.png'),
+  'LUNA': require('../../assets/characters/luna.png'),
+  'GINNY': require('../../assets/characters/ginny.png'),
+  'FRED': require('../../assets/characters/fred.png'),
+  'GEORGE': require('../../assets/characters/george.png'),
+  'PERCY': require('../../assets/characters/percy.png'),
+  'OLIVER': require('../../assets/characters/oliver_wood.png'),
+  'CEDRIC': require('../../assets/characters/cedric.png'),
+  'FLEUR': require('../../assets/characters/fleur.png'),
+  'BELLATRIX': require('../../assets/characters/bellatrix.png'),
+  'LUCIUS': require('../../assets/characters/lucius.png'),
+  'LOCKHART': require('../../assets/characters/lockhart.png'),
+  'TRELAWNEY': require('../../assets/characters/trelawney.png'),
+  'DEAN': require('../../assets/characters/dean.png'),
+  'SEAMUS': require('../../assets/characters/seamus.png'),
+  'LAVENDER': require('../../assets/characters/lavender.png'),
+  'PARVATI': require('../../assets/characters/parvati.png'),
+  'PADMA': require('../../assets/characters/padma.png'),
+  'PANSY': require('../../assets/characters/pansy.png'),
+  'CRABBE': require('../../assets/characters/crabbe.png'),
+  'GOYLE': require('../../assets/characters/goyle.png'),
+  'BLAISE': require('../../assets/characters/blaise.png'),
+  'JUSTIN': require('../../assets/characters/justin.png'),
+  'HANNAH': require('../../assets/characters/hannah.png'),
+  'SUSAN': require('../../assets/characters/susan.png'),
+  'ERNIE': require('../../assets/characters/ernie.png'),
+  'TERRY': require('../../assets/characters/terry.png'),
+  'ANTHONY': require('../../assets/characters/anthony.png'),
+  'MANDY': require('../../assets/characters/mandy.png'),
+  'QUIRRELL': require('../../assets/characters/quirrell.png'),
+  'FLITWICK': require('../../assets/characters/flitwick.png'),
+  'SPROUT': require('../../assets/characters/sprout.png'),
+  'HOOCH': require('../../assets/characters/hooch.png'),
+  'FILCH': require('../../assets/characters/filch.png'),
+  'POMFREY': require('../../assets/characters/pomfrey.png'),
+  'ANGELINA': require('../../assets/characters/angelina.png'),
+  'ALICIA': require('../../assets/characters/alicia.png'),
+  'KATIE': require('../../assets/characters/katie.png'),
+  'LEE': require('../../assets/characters/lee.png'),
+  'NICK': require('../../assets/characters/nick.png'),
+  'PEEVES': require('../../assets/characters/peeves.png'),
 };
 
 const TAG_NAMES: Record<string, string> = {
@@ -108,61 +150,37 @@ function createMessage(role: 'user' | 'ai', text: string, characterName?: string
   };
 }
 
-function TypingDots() {
-  const firstDot = useRef(new Animated.Value(0.2)).current;
-  const secondDot = useRef(new Animated.Value(0.2)).current;
-  const thirdDot = useRef(new Animated.Value(0.2)).current;
+const TypingIndicator = () => {
+  const dot1 = useRef(new Animated.Value(0.3)).current;
+  const dot2 = useRef(new Animated.Value(0.3)).current;
+  const dot3 = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
-    const animations = [
-      { value: firstDot, delay: 0 },
-      { value: secondDot, delay: 200 },
-      { value: thirdDot, delay: 400 },
-    ].map(({ value, delay }) =>
+    const animate = (dot: Animated.Value, delay: number) =>
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
-          Animated.timing(value, {
-            toValue: 1,
-            duration: 250,
-            useNativeDriver: true,
-          }),
-          Animated.timing(value, {
-            toValue: 0.2,
-            duration: 250,
-            useNativeDriver: true,
-          }),
-        ]),
-      ),
-    );
+          Animated.timing(dot, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+        ])
+      ).start();
 
-    animations.forEach((animation) => animation.start());
-
-    return () => {
-      animations.forEach((animation) => animation.stop());
-    };
-  }, [firstDot, secondDot, thirdDot]);
+    animate(dot1, 0);
+    animate(dot2, 150);
+    animate(dot3, 300);
+  }, []);
 
   return (
-    <View style={styles.typingDotsRow}>
-      <Animated.View style={[styles.typingDot, styles.typingDotSpacer, { opacity: firstDot }]} />
-      <Animated.View style={[styles.typingDot, styles.typingDotSpacer, { opacity: secondDot }]} />
-      <Animated.View style={[styles.typingDot, { opacity: thirdDot }]} />
+    <View style={styles.typingIndicator}>
+      <Animated.View style={[styles.typingDot, { opacity: dot1 }]} />
+      <Animated.View style={[styles.typingDot, { opacity: dot2 }]} />
+      <Animated.View style={[styles.typingDot, { opacity: dot3 }]} />
     </View>
   );
-}
+};
 
 function TypingBubble() {
-  return (
-    <View style={styles.aiRow}>
-      <View style={styles.aiAvatar}>
-        <Text style={styles.aiAvatarText}>{NARRATOR_SYMBOL}</Text>
-      </View>
-      <View style={styles.aiBubble}>
-        <TypingDots />
-      </View>
-    </View>
-  );
+  return <TypingIndicator />;
 }
 
 type MessageBubbleProps = {
@@ -193,8 +211,18 @@ function parseTaggedResponse(text: string): Array<{ tag: string; name: string; c
   const pushBlock = () => {
     const content = currentLines.join('\n').trim();
     if (content) {
-      const name = TAG_NAMES[currentTag] || (currentTag.startsWith('CHARACTER:') ? currentTag.slice(10) : currentTag);
-      blocks.push({ tag: currentTag, name, content });
+      let resolvedTag = currentTag;
+      let resolvedName = TAG_NAMES[currentTag] || currentTag;
+
+      if (currentTag.startsWith('CHARACTER:')) {
+        resolvedName = currentTag.slice(10).trim();
+        // Try to match to known tag by name
+        const upperName = resolvedName.toUpperCase().split(' ')[0];
+        resolvedTag = TAG_AVATARS[upperName] ? upperName : 'UNKNOWN';
+      }
+
+      const name = resolvedName;
+      blocks.push({ tag: resolvedTag, name, content });
     }
   };
 
@@ -304,7 +332,7 @@ function renderAIMessage(item: Message) {
   return (
     <>
       {taggedBlocks.map((block, index) => {
-        const avatarSource = TAG_AVATARS[block.tag] ?? TAG_AVATARS.NARRATOR;
+        const avatarSource = TAG_AVATARS[block.tag] ?? TAG_AVATARS['UNKNOWN'];
 
         return (
           <View key={`${item.id}-${index}`} style={styles.aiBlockRow}>
@@ -547,7 +575,7 @@ const {
                       pressed && canSend && !isLoading ? styles.sendButtonPressed : null,
                     ]}
                   >
-                    <Text style={styles.sendButtonText}>✦</Text>
+                    <Text style={styles.sendButtonText}>↑</Text>
                   </Pressable>
                 </View>
               </View>
@@ -891,6 +919,7 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 18,
     color: '#F5E6C8',
+    fontWeight: '700',
   },
   emptyStateWrap: {
     flex: 1,
@@ -912,19 +941,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  typingDotsRow: {
+  typingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 18,
-    paddingVertical: 2,
-  },
-  typingDotSpacer: {
-    marginRight: 6,
+    gap: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   typingDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#999999',
+    backgroundColor: 'rgba(255,255,255,0.4)',
   },
 });
