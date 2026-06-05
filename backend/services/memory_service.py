@@ -120,6 +120,11 @@ async def save_memory(session_id: str, character_id: str, summary: str):
         return None
 
     owner_id = _normalize_memory_owner_id(session_id)
+    user_payload = {
+        "id": owner_id,
+        "email": f"{owner_id}@session.local",
+        "tier": "free",
+    }
     payload = {
         "user_id": owner_id,
         "character_id": character_id,
@@ -127,7 +132,18 @@ async def save_memory(session_id: str, character_id: str, summary: str):
     }
 
     try:
-        return supabase.table("user_memories").insert(payload).execute()
+        user_response = (
+            supabase.table("users")
+            .select("id")
+            .eq("id", owner_id)
+            .execute()
+        )
+        user_rows = getattr(user_response, "data", None) or []
+
+        if not user_rows:
+            supabase.table("users").upsert(user_payload, on_conflict="id").execute()
+
+        return supabase.table("user_memories").upsert(payload).execute()
     except Exception:
         logger.exception("Failed to save user memory")
         return None

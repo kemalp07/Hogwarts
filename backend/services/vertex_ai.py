@@ -2,6 +2,9 @@ import json
 import os
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
+from urllib.parse import quote, urlparse
+import traceback
+from datetime import datetime
 
 import httpx
 from dotenv import load_dotenv
@@ -91,6 +94,22 @@ def _extract_text_from_event(event: Dict[str, Any]) -> str:
     return ""
 
 
+def _write_vertex_log(message: str, exc: Optional[BaseException] = None) -> None:
+    try:
+        logs_dir = PROJECT_ROOT / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        log_path = logs_dir / "vertex_error.log"
+        ts = datetime.utcnow().isoformat() + "Z"
+        with open(log_path, "a", encoding="utf-8") as fh:
+            fh.write(f"[{ts}] {message}\n")
+            if exc is not None:
+                traceback.print_exc(file=fh)
+                fh.write("\n")
+    except Exception:
+        # best-effort logging; don't fail the main flow
+        pass
+
+
 def _split_system_and_contents(messages: List[Dict[str, Any]]) -> Tuple[Optional[str], List[Dict[str, Any]]]:
     system_text: Optional[str] = None
     contents: List[Dict[str, Any]] = []
@@ -176,10 +195,21 @@ async def stream_vertex_ai(messages: List[Dict[str, Any]], model: Optional[str] 
         if location == "global"
         else f"https://{location}-aiplatform.googleapis.com"
     )
+    # Ensure components are URL-encoded to avoid invalid URL arguments
+    safe_project = quote(str(project_id), safe="")
+    safe_model = quote(str(model_name), safe="")
+    safe_location = quote(str(location), safe="")
+
     url = (
-        f"{api_host}/v1/projects/{project_id}/locations/{location}"
-        f"/publishers/google/models/{model_name}:streamGenerateContent?alt=sse"
+        f"{api_host}/v1/projects/{safe_project}/locations/{safe_location}"
+        f"/publishers/google/models/{safe_model}:streamGenerateContent?alt=sse"
     )
+
+    # Basic URL validation to catch malformed values early
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        yield normalize_turkish_text(f"Vertex AI için oluşturulan URL geçersiz: {url}")
+        return
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
@@ -187,10 +217,23 @@ async def stream_vertex_ai(messages: List[Dict[str, Any]], model: Optional[str] 
 
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
+            try:
+                async with client.stream("POST", url, headers=headers, json=payload) as response:
+                    pass
+            except OSError as exc:
+                _write_vertex_log(f"OSError during client.stream POST to {url} (project={project_id}, location={location}): {exc}", exc)
+                yield normalize_turkish_text(
+                    f"Vertex AI socket hatası: {exc}. URL: {url}, project: {project_id}, location: {location}. Detaylar logs/vertex_error.log içinde."
+                )
+                return
+
+            # re-open the stream for actual processing (some httpx versions require reuse of context)
             async with client.stream("POST", url, headers=headers, json=payload) as response:
                 if response.status_code >= 400:
                     text = await response.aread()
-                    yield normalize_turkish_text(f"Vertex AI HTTP {response.status_code}: {text[:300].decode('utf-8', errors='replace')}")
+                    err_text = text[:300].decode('utf-8', errors='replace')
+                    _write_vertex_log(f"Vertex AI HTTP {response.status_code}: {err_text}")
+                    yield normalize_turkish_text(f"Vertex AI HTTP {response.status_code}: {err_text}")
                     return
 
                 buffer = ""
@@ -232,4 +275,5 @@ async def stream_vertex_ai(messages: List[Dict[str, Any]], model: Optional[str] 
                             except Exception:
                                 pass
     except Exception as exc:
-        yield normalize_turkish_text(f"Vertex AI bağlantı hatası: {exc}")
+        _write_vertex_log(f"Unhandled exception in stream_vertex_ai: {exc}", exc)
+        yield normalize_turkish_text(f"Vertex AI bağlantı hatası: {exc}. Detaylar logs/vertex_error.log içinde.")

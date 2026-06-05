@@ -9,6 +9,9 @@ from ..services.prompt_builder import build_prompt
 from ..services.memory_service import generate_summary, get_memories, save_memory
 from ..services.vertex_ai import stream_vertex_ai
 from ..db.supabase_client import insert_message, supabase
+import traceback
+from pathlib import Path
+from datetime import datetime
 
 router = APIRouter()
 
@@ -208,6 +211,19 @@ async def chat_endpoint(request: Request):
                 payload = json.dumps({"type": "chunk", "text": out_buf})
                 yield f"data: {payload}\n\n"
         except Exception as exc:
+            # write full traceback to logs/chat_error.log for debugging
+            try:
+                logs_dir = Path(__file__).resolve().parents[2] / "logs"
+                logs_dir.mkdir(parents=True, exist_ok=True)
+                log_path = logs_dir / "chat_error.log"
+                ts = datetime.utcnow().isoformat() + "Z"
+                with open(log_path, "a", encoding="utf-8") as fh:
+                    fh.write(f"[{ts}] Exception in generate(): {exc}\n")
+                    traceback.print_exc(file=fh)
+                    fh.write("\n")
+            except Exception:
+                pass
+
             stub = f"Vertex AI yanıt üretirken hata oluştu: {exc}"
             full_text += stub
             payload = json.dumps({"type": "chunk", "text": stub})

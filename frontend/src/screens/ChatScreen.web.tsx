@@ -16,7 +16,7 @@ import {
   TextInputKeyPressEventData,
   View,
 } from 'react-native';
-// video background removed for seamless solid background
+import { Asset } from 'expo-asset';
 import { useAppContext, Message } from '../context/AppContext';
 import { getFirstMessage } from '../services/characterCard';
 import { sendMessage as sendAiMessage } from '../services/aiService';
@@ -27,6 +27,8 @@ const NARRATOR_SYMBOL = '⚡';
 const HOUSES = ['Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin'] as const;
 const MIN_INPUT_HEIGHT = 36;
 const MAX_INPUT_HEIGHT = 100;
+const LOOP_CROSSFADE_SECONDS = 0.75;
+const LOOP_CROSSFADE_MS = 650;
 
 const WEB_INPUT_RESET =
   Platform.OS === 'web'
@@ -115,7 +117,6 @@ function parseAIMessage(text: string): React.ReactNode {
         return (
           <View key={pi} style={styles.aiParagraph}>
             {lines.map((line, li) => {
-              // 1) Dialogue with speaker: Name: "dialogue"
               const dialogueMatch = line.match(/^([A-ZÇĞİÖŞÜa-zçğışöü\s]+):\s*"(.+)"$/);
               if (dialogueMatch) {
                 return (
@@ -126,7 +127,6 @@ function parseAIMessage(text: string): React.ReactNode {
                 );
               }
 
-              // 2) Quote-only line: "some dialogue"
               const quoteOnlyMatch = line.match(/^"(.+)"$/);
               if (quoteOnlyMatch) {
                 return (
@@ -136,7 +136,6 @@ function parseAIMessage(text: string): React.ReactNode {
                 );
               }
 
-              // 3) Line contains quoted segments somewhere: color quoted parts amber/orange
               if (line.indexOf('"') !== -1) {
                 const pieces = line.split(/("[^"]*")/g);
                 return (
@@ -151,7 +150,6 @@ function parseAIMessage(text: string): React.ReactNode {
                         );
                       }
 
-                      // inside non-quoted piece, preserve italic parsing
                       const parts = piece.split(/(\*[^*]+\*)/g);
                       return parts.map((part, k) =>
                         part.startsWith('*') && part.endsWith('*') ? (
@@ -169,7 +167,6 @@ function parseAIMessage(text: string): React.ReactNode {
                 );
               }
 
-              // 4) Default: preserve existing italic parsing
               const parts = line.split(/(\*[^*]+\*)/g);
               return (
                 <Text key={`${pi}-${li}`} style={styles.aiLine}>
@@ -243,7 +240,6 @@ export const ChatScreen: React.FC = () => {
   const isWeb = Platform.OS === 'web';
   const flatListRef = useRef<FlatList<Message>>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // background video removed; using solid background color instead
 
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
@@ -258,13 +254,20 @@ export const ChatScreen: React.FC = () => {
     setShowHouseSelection(true);
   }, [setMessages, userName]);
 
-  // Auto-scroll on messages or loading change
+  // background video removed: using solid color background for web
+
   useEffect(() => {
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
     const frame = requestAnimationFrame(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     });
 
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   }, [messages, isLoading]);
 
   const handleSend = async () => {
@@ -337,6 +340,7 @@ export const ChatScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.overlay}>
+        <View style={styles.backgroundColorFill} />
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
@@ -440,13 +444,42 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  keyboardAvoidingView: {
+  overlay: {
     flex: 1,
     backgroundColor: 'transparent',
   },
-  overlay: {
+  backgroundVideoWrap: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  backgroundVideoIgnorePointer: {
+    pointerEvents: 'none',
+  },
+  backgroundVideo: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    filter: 'saturate(1.14) contrast(1.08) brightness(1.04)',
+  },
+  backgroundVideoLayer: {
+    // No transition: instant swap for seamless illusion
+    transitionProperty: 'opacity',
+    transitionDuration: `0ms`,
+    transitionTimingFunction: 'linear',
+  },
+
+  backgroundColorFill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    backgroundImage: "url('/assets/hogwarts_clean.png')",
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+    opacity: 0.95,
+  },
+  keyboardAvoidingView: {
     flex: 1,
-    backgroundColor: '#090703',
+    backgroundColor: 'transparent',
   },
   screen: {
     flex: 1,
@@ -595,9 +628,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   houseSelectionArea: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: 'rgba(245, 230, 200, 0.12)',
     paddingBottom: Platform.OS === 'ios' ? 24 : 12,
   },
   houseButtonsRow: {

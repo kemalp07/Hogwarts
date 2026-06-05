@@ -14,7 +14,8 @@ type ChatApiResponse = {
   text?: string;
 };
 
-const API_URL = 'http://localhost:8001/api/chat';
+// Use the test endpoint in local dev when Vertex credentials may be missing.
+const API_URL = process.env.NODE_ENV === 'production' ? 'http://localhost:8001/api/chat' : 'http://localhost:8001/api/chat-test';
 
 type CharacterCardData = {
   data?: {
