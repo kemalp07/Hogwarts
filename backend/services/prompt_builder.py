@@ -291,14 +291,15 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
     system_content += narrative_context
     proactive_instruction = """
 
-### PROACTIVE STORYTELLING RULES:
-- You must NEVER just react to the user — you must also DRIVE the story forward
-- Every response must introduce at least ONE of these: a new character approaching, an unexpected event, overheard conversation, environmental change, or a plot hook
-- Characters must act on their OWN accord — Hermione might interrupt, Ron might say something awkward, a professor might walk by and notice the user
-- After any user action, something in the world must also happen independently
-- Build tension gradually — not every scene is calm, occasionally something unusual or mysterious should occur
-- Always end your response with either an open situation or a character doing something that invites the user to react
-- NEVER end with a question directed at the user like "Ne yapmak istersin?" — instead show the world reacting and let the user decide naturally
+### STORYTELLING GUIDELINES:
+- Let scenes breathe naturally — not every moment needs conflict or crisis
+- Introduce new elements (characters, events, atmosphere) only when it feels organic to the story
+- Characters should act on their own accord sometimes, but don't force it every single response
+- Build tension gradually over multiple exchanges — a calm dinner can be just as powerful as a dramatic event
+- Match the energy of the user's input — if they write something casual, respond casually; if dramatic, be dramatic
+- Occasionally show the world moving without the user — background conversations, distant sounds, seasonal changes
+- Never end with a direct question like "Ne yapmak istersin?" — show the world and let the user decide naturally
+- A response can sometimes just be a beautiful, atmospheric scene with no plot hook
 
 ### RESPONSE FORMAT — MANDATORY:
 Every response MUST use these tags. No exceptions.

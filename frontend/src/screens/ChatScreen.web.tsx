@@ -364,6 +364,14 @@ function MessageBubble({ item, hogwartsHouse }: MessageBubbleProps) {
   return renderAIMessage(item);
 }
 
+const INPUT_TIPS = [
+  '💬 Karakter konuşturmak için tırnak kullan: "Hermione\'ye bak"',
+  '⚡ Eylem için yıldız kullan: *çevreye bakınır*',
+  '🧙 Bir karakteri çağır: Snape\'e bir soru sor',
+  '📖 Sahneyi yönlendir: Kütüphaneye gitmek istiyorum',
+  '🔮 Duygu belirt: Biraz tedirgin hissediyorum',
+];
+
 export const ChatScreen = () => {
 const {
   userName,
@@ -389,6 +397,7 @@ const {
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
   const [showHouseSelection, setShowHouseSelection] = useState(false);
+  const [tipIndex, setTipIndex] = useState(0);
 
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
 
@@ -398,6 +407,13 @@ const {
     setMessages([createMessage('ai', personalizedMessage)]);
     setShowHouseSelection(true);
   }, [setMessages, userName]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTipIndex(i => (i + 1) % INPUT_TIPS.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   // background video removed: using solid color background for web
 
@@ -549,6 +565,7 @@ const {
               </View>
             ) : (
               <View style={styles.inputArea}>
+                <Text style={styles.inputTip}>{INPUT_TIPS[tipIndex]}</Text>
                 <View style={[styles.inputBox, styles.inputBoxSpacing]}>
                   <TextInput
                     value={inputText}
@@ -855,6 +872,13 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 24,
     alignItems: 'center',
+  },
+  inputTip: {
+    fontSize: 11,
+    color: 'rgba(245, 220, 180, 0.45)',
+    textAlign: 'center',
+    marginBottom: 6,
+    fontStyle: 'italic',
   },
   inputBoxSpacing: {
     marginBottom: 0,
