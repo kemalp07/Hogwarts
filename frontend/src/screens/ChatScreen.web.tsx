@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#D97706',
   },
   sendButtonDisabled: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: 'transparent',
   },
   sendButtonPressed: {
     opacity: 0.9,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,6 +17,12 @@ type OnboardingScreenProps = {
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   const [inputValue, setInputValue] = useState('');
   const { setUserName } = useAppContext();
+
+  useEffect(() => {
+    if (localStorage.getItem('hp_user_name')) {
+      navigation.navigate('Chat');
+    }
+  }, []);
 
   const handleStartPress = () => {
     const trimmedName = inputValue.trim();

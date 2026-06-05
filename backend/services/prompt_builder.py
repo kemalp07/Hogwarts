@@ -79,6 +79,8 @@ def _build_spec_prompt(user_name: str) -> str:
         if isinstance(value, str) and value.strip():
             sections.append(value.replace("{{user}}", user_name or "Öğrenci").strip())
 
+    sections.append("IMPORTANT: Always respond in Turkish (Türkçe). Never switch to English unless the user writes in English first.")
+
     return "\n\n".join(sections)
 
 
