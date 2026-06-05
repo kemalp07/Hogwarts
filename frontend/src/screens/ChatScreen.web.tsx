@@ -379,33 +379,21 @@ export const ChatScreen: React.FC = () => {
       return;
     }
 
-    const taggedBlocks = parseTaggedResponse(item.text);
+    const nextMessages = [...messages, createMessage('user', trimmed)];
+    setMessages(nextMessages);
+    setInputText('');
+    setInputHeight(MIN_INPUT_HEIGHT);
+    setIsLoading(true);
 
-    return (
-      <>
-        {taggedBlocks.map((block, index) => {
-          const avatarSource = TAG_AVATARS[block.tag] || getCharacterAvatarSource(item.characterName) || TAG_AVATARS.NARRATOR;
-
-          return (
-            <View key={`${item.id}-${index}`} style={styles.aiBlockRow}>
-              {avatarSource ? (
-                <Image source={avatarSource} style={styles.aiBlockAvatarImage} />
-              ) : (
-                <View style={styles.aiBlockAvatar}>
-                  <Text style={styles.aiAvatarText}>{NARRATOR_SYMBOL}</Text>
-                </View>
-              )}
-              <View style={styles.aiBlockBody}>
-                <Text style={styles.aiBlockName}>{block.name}</Text>
-                <View style={styles.aiBubble}>
-                  <View style={styles.aiMessageRoot}>{parseAIMessage(block.content)}</View>
-                </View>
-              </View>
-            </View>
-          );
-        })}
-      </>
-    );
+    try {
+      const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse);
+      setMessages([
+        ...nextMessages,
+        createMessage('ai', aiResponse.text, aiResponse.characterName),
+      ]);
+    } catch (error) {
+      console.error('AI Error:', error);
+      setMessages([
         ...nextMessages,
         createMessage('ai', 'Bir şeyler ters gitti, tekrar dener misin?'),
       ]);
