@@ -14,11 +14,11 @@ type CharacterCardData = {
 
 const card = characterCardData as CharacterCardData;
 
-const SORTING_HAT_SCENE = `The Great Hall falls silent as you step forward.
-Professor McGonagall places the ancient Sorting Hat upon your head...
-"Hmm," the Hat mutters in your ear. "I see courage, and cunning, loyalty and wit.
-But where to put you..."
-Which house calls to you?`;
+const SORTING_HAT_SCENE = `Büyük Salon, sen öne adım atarken sessizleşir.
+Profesör McGonagall kadim Sıralama Şapkası'nı başına koyar...
+"Hmm," diye mırıldanır Şapka kulağında. "Cesaret görüyorum, zeka ve sadakat...
+Ama seni nereye koymalıyım?"
+Hangi ev seni çağırıyor?`;
 
 function hasSortingHatScene(text: string): boolean {
   const lower = text.toLowerCase();

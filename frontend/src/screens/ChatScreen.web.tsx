@@ -550,6 +550,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     maxWidth: '85%',
+    backgroundColor: 'rgba(120, 50, 8, 0.95)',
     flexShrink: 1,
   },
   aiRow: {
@@ -567,9 +568,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
+    backgroundColor: 'rgba(12, 7, 2, 0.92)',
     flexShrink: 0,
   },
   aiAvatarText: {
+    marginBottom: 0,
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
@@ -589,8 +592,8 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 14,
-    lineHeight: 22,
-    color: '#FFFFFF',
+    paddingTop: 12,
+    paddingBottom: 12,
     flexShrink: 1,
     flexWrap: 'wrap',
   },
@@ -610,21 +613,21 @@ const styles = StyleSheet.create({
   },
   aiSpeakerText: {
     fontWeight: '700',
-    color: '#92400E',
+    color: '#FB923C',
     lineHeight: 22,
   },
   aiDialogueText: {
-    color: '#92400E',
+    color: '#F59E0B',
     fontStyle: 'italic',
     lineHeight: 22,
   },
   aiPlainText: {
-    color: '#F5E6C8',
+    color: '#F5F0E8',
     lineHeight: 22,
   },
   aiItalicText: {
     fontStyle: 'italic',
-    color: '#6B7280',
+    color: '#D4B896',
     lineHeight: 22,
   },
   houseSelectionArea: {
@@ -659,11 +662,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   inputArea: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(8, 5, 2, 0.85)',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(245, 230, 200, 0.12)',
+    borderTopColor: 'rgba(245, 230, 200, 0.15)',
     paddingHorizontal: 16,
     paddingTop: 10,
+    paddingBottom: 16,
     alignItems: 'center',
   },
   inputBoxSpacing: {
