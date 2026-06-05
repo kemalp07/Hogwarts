@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   inputBoxSpacing: {
-    marginBottom: Platform.OS === 'ios' ? 24 : 12,
+    marginBottom: 0,
   },
   inputBox: {
     backgroundColor: 'rgba(15, 10, 5, 1)',
