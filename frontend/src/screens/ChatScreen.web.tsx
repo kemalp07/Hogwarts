@@ -157,6 +157,19 @@ function TypingDots() {
   );
 }
 
+function TypingBubble() {
+  return (
+    <View style={styles.aiRow}>
+      <View style={styles.aiAvatar}>
+        <Text style={styles.aiAvatarText}>{NARRATOR_SYMBOL}</Text>
+      </View>
+      <View style={styles.aiBubble}>
+        <TypingDots />
+      </View>
+    </View>
+  );
+}
+
 type MessageBubbleProps = {
   item: Message;
 };
@@ -289,6 +302,30 @@ function parseAIMessage(text: string): React.ReactNode {
   );
 }
 
+function renderAIMessage(item: Message) {
+  const taggedBlocks = parseTaggedResponse(item.text);
+
+  return (
+    <>
+      {taggedBlocks.map((block, index) => {
+        const avatarSource = TAG_AVATARS[block.tag] ?? TAG_AVATARS.NARRATOR;
+
+        return (
+          <View key={`${item.id}-${index}`} style={styles.aiBlockRow}>
+            <Image source={avatarSource} style={styles.aiBlockAvatarImage} />
+            <View style={styles.aiBlockBody}>
+              <Text style={styles.aiBlockName}>{block.name}</Text>
+              <View style={styles.aiBubble}>
+                <View style={styles.aiMessageRoot}>{parseAIMessage(block.content)}</View>
+              </View>
+            </View>
+          </View>
+        );
+      })}
+    </>
+  );
+}
+
 function MessageBubble({ item }: MessageBubbleProps) {
   if (item.role === 'user') {
     return (
@@ -300,45 +337,19 @@ function MessageBubble({ item }: MessageBubbleProps) {
     );
   }
 
-  return (
-    <View style={styles.aiRow}>
-      {getCharacterAvatarSource(item.characterName) ? (
-        <Image source={getCharacterAvatarSource(item.characterName)} style={styles.aiAvatarImage} />
-      ) : (
-        <View style={styles.aiAvatar}>
-          <Text style={styles.aiAvatarText}>{NARRATOR_SYMBOL}</Text>
-        </View>
-      )}
-      <View style={styles.aiBubble}>
-        <View style={styles.aiMessageRoot}>{parseAIMessage(item.text)}</View>
-      </View>
-    </View>
-  );
+  return renderAIMessage(item);
 }
 
-function TypingBubble() {
-  return (
-    <View style={styles.aiRow}>
-      <View style={styles.aiAvatar}>
-        <Text style={styles.aiAvatarText}>{NARRATOR_SYMBOL}</Text>
-      </View>
-      <View style={styles.aiBubble}>
-        <TypingDots />
-      </View>
-    </View>
-  );
-}
-
-export const ChatScreen: React.FC = () => {
-  const {
-    userName,
-    messages,
-    setMessages,
-    isLoading,
-    setIsLoading,
-    hogwartsHouse,
-    setHogwartsHouse,
-  } = useAppContext();
+export const ChatScreen = () => {
+const {
+  userName,
+  messages,
+  setMessages,
+  isLoading,
+  setIsLoading,
+  hogwartsHouse,
+  setHogwartsHouse,
+} = useAppContext();
   const isWeb = Platform.OS === 'web';
   const flatListRef = useRef<FlatList<Message>>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -449,6 +460,7 @@ export const ChatScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.overlay}>
         <View style={styles.backgroundColorFill} />
+        <View style={styles.backgroundDarkOverlay} />
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <KeyboardAvoidingView
           style={styles.keyboardAvoidingView}
@@ -469,7 +481,7 @@ export const ChatScreen: React.FC = () => {
               ref={flatListRef}
               data={messages}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => <MessageBubble item={item} />}
+              renderItem={({ item }) => (item.role === 'ai' ? renderAIMessage(item) : <MessageBubble item={item} />)}
               onContentSizeChange={() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
               }}
@@ -547,6 +559,8 @@ export const ChatScreen: React.FC = () => {
   );
 };
 
+export default ChatScreen;
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -583,7 +597,11 @@ const styles = StyleSheet.create({
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
-    opacity: 0.95,
+    opacity: 0.55,
+  },
+  backgroundDarkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -698,11 +716,11 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   aiBlockAvatarImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     overflow: 'hidden',
-    marginRight: 10,
+    marginRight: 8,
     flexShrink: 0,
   },
   aiBlockBody: {
@@ -711,11 +729,10 @@ const styles = StyleSheet.create({
   },
   aiBlockName: {
     fontSize: 11,
-    color: '#D4B896',
-    marginBottom: 4,
-    marginLeft: 2,
     fontWeight: '600',
-    letterSpacing: 0.2,
+    color: '#F59E0B',
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
   aiAvatarImage: {
     width: 36,

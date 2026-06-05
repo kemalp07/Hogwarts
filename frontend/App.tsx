@@ -18,14 +18,14 @@ function RootNavigator() {
         name="Onboarding"
         component={OnboardingScreen}
         options={{
-          animationEnabled: false,
+          animation: 'none',
         }}
       />
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
         options={{
-          animationEnabled: false,
+          animation: 'none',
         }}
       />
     </Stack.Navigator>
