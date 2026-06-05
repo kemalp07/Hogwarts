@@ -90,17 +90,12 @@ const TAG_NAMES: Record<string, string> = {
 };
 
 function houseColor(house: string): string {
-  switch (house) {
-    case 'Gryffindor':
-      return '#8B0000';
-    case 'Hufflepuff':
-      return '#D97706';
-    case 'Ravenclaw':
-      return '#1E3A8A';
-    case 'Slytherin':
-      return '#166534';
-    default:
-      return '#888';
+  switch (house.toLowerCase()) {
+    case 'gryffindor': return 'rgba(120, 10, 10, 0.92)';
+    case 'slytherin': return 'rgba(10, 80, 40, 0.92)';
+    case 'hufflepuff': return 'rgba(140, 100, 0, 0.92)';
+    case 'ravenclaw': return 'rgba(10, 40, 110, 0.92)';
+    default: return 'rgba(60, 40, 10, 0.92)';
   }
 }
 
@@ -172,6 +167,7 @@ function TypingBubble() {
 
 type MessageBubbleProps = {
   item: Message;
+  hogwartsHouse: string;
 };
 
 function getCharacterAvatarSource(characterName?: string) {
@@ -326,11 +322,11 @@ function renderAIMessage(item: Message) {
   );
 }
 
-function MessageBubble({ item }: MessageBubbleProps) {
+function MessageBubble({ item, hogwartsHouse }: MessageBubbleProps) {
   if (item.role === 'user') {
     return (
       <View style={styles.userRow}>
-        <View style={styles.userBubble}>
+        <View style={[styles.userBubble, { backgroundColor: houseColor(hogwartsHouse) }]}>
           <Text style={[styles.messageText, styles.userMessageText]}>{item.text}</Text>
         </View>
       </View>
@@ -484,7 +480,7 @@ const {
               ref={flatListRef}
               data={messages}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (item.role === 'ai' ? renderAIMessage(item) : <MessageBubble item={item} />)}
+              renderItem={({ item }) => (item.role === 'ai' ? renderAIMessage(item) : <MessageBubble item={item} hogwartsHouse={hogwartsHouse} />)}
               onContentSizeChange={() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
               }}
@@ -494,6 +490,7 @@ const {
               ItemSeparatorComponent={() => <View style={styles.messageSeparator} />}
               keyboardShouldPersistTaps="handled"
               inverted={false}
+              showsVerticalScrollIndicator={false}
               ListFooterComponent={isLoading ? <TypingBubble /> : null}
               ListEmptyComponent={
                 <View style={styles.emptyStateWrap}>
@@ -550,7 +547,7 @@ const {
                       pressed && canSend && !isLoading ? styles.sendButtonPressed : null,
                     ]}
                   >
-                    <Text style={[styles.sendIcon, canSend && !isLoading ? styles.sendIconActive : styles.sendIconDisabled]}>↑</Text>
+                    <Text style={styles.sendButtonText}>✦</Text>
                   </Pressable>
                 </View>
               </View>
@@ -648,6 +645,9 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     flexGrow: 1,
     alignItems: 'stretch',
+    maxWidth: 720,
+    alignSelf: 'center',
+    width: '100%',
   },
   messageSeparator: {
     height: 14,
@@ -659,15 +659,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   userBubble: {
-    backgroundColor: 'rgba(146, 64, 14, 0.9)',
     borderTopLeftRadius: 14,
     borderTopRightRadius: 4,
     borderBottomRightRadius: 14,
     borderBottomLeftRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    maxWidth: '85%',
-    backgroundColor: 'rgba(120, 50, 8, 0.95)',
+    maxWidth: '72%',
     flexShrink: 1,
   },
   aiRow: {
@@ -749,8 +747,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    maxWidth: '85%',
-    flexShrink: 1,
+    maxWidth: '100%',
+    flex: 1,
   },
   messageText: {
     fontSize: 14,
@@ -889,6 +887,10 @@ const styles = StyleSheet.create({
   },
   sendIconDisabled: {
     color: '#8C8C8C',
+  },
+  sendButtonText: {
+    fontSize: 18,
+    color: '#F5E6C8',
   },
   emptyStateWrap: {
     flex: 1,
