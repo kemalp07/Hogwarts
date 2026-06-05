@@ -375,6 +375,7 @@ const INPUT_TIPS = [
 export const ChatScreen = () => {
 const {
   userName,
+  sessionId,
   messages,
   setMessages,
   isLoading,
@@ -415,6 +416,30 @@ const {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!userName || !sessionId || messages.length > 0) return;
+
+    const loadHistory = async () => {
+      try {
+        const res = await fetch(`http://localhost:8001/api/history?session_id=${encodeURIComponent(sessionId)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const msgs = data.messages || [];
+        if (msgs.length === 0) return;
+
+        const loaded: Message[] = msgs.map((m: any) => createMessage(
+          m.role === 'user' ? 'user' : 'ai',
+          m.content
+        ));
+        setMessages(loaded);
+      } catch (e) {
+        console.error('History load error:', e);
+      }
+    };
+
+    loadHistory();
+  }, [userName, sessionId]);
+
   // background video removed: using solid color background for web
 
   useEffect(() => {
@@ -445,7 +470,7 @@ const {
     setIsLoading(true);
 
     try {
-      const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse);
+      const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse, sessionId);
       setMessages([
         ...nextMessages,
         createMessage('ai', aiResponse.text, aiResponse.characterName),
@@ -478,7 +503,7 @@ const {
     setIsLoading(true);
 
     try {
-      const response = await sendAiMessage(nextMessages, userName, house);
+      const response = await sendAiMessage(nextMessages, userName, house, sessionId);
       setMessages([
         ...nextMessages,
         createMessage('ai', response.text, response.characterName),

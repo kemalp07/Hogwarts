@@ -25,6 +25,7 @@ export async function sendMessage(
   messages: Message[],
   userName: string,
   house: string = '',
+  sessionId: string = '',
 ): Promise<AIMessageResult> {
   try {
     const history: ApiMessage[] = messages
@@ -40,6 +41,7 @@ export async function sendMessage(
       character_id: 'hogwarts-narrator',
       location_id: 'great-hall',
       history,
+      session_id: sessionId,
     };
 
     const response = await fetch(API_URL, {
