@@ -198,6 +198,35 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
     except Exception:
         locations = []
 
+    chars_1991_path = project_root / "database" / "seed_data" / "hogwarts_characters_1991.json"
+    try:
+        chars_1991 = json.loads(chars_1991_path.read_text(encoding="utf-8"))
+    except Exception:
+        chars_1991 = []
+
+    # Build character reference block
+    char_blocks = []
+    for c in chars_1991:
+        name = c.get("name", "")
+        personality = c.get("personality", "")
+        speech = c.get("speech_style", "")
+        prompt = c.get("base_prompt", "")
+        house = c.get("house", "")
+        role = c.get("role", "")
+        if name and (personality or prompt):
+            block = f"### {name} ({role}, {house})\n"
+            if personality:
+                block += f"Kişilik: {personality}\n"
+            if speech:
+                block += f"Konuşma tarzı: {speech}\n"
+            if prompt:
+                block += f"{prompt}"
+            char_blocks.append(block)
+
+    characters_reference = ""
+    if char_blocks:
+        characters_reference = "## KARAKTER REHBERİ:\n" + "\n\n".join(char_blocks)
+
     character = next((c for c in characters if c.get("id") == character_id), None)
     location = next((l for l in locations if l.get("id") == location_id), None)
 
@@ -227,6 +256,7 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 
     system_parts = [
         spec_prompt,
+        characters_reference,
         f"## Active Character: {character.get('name', '')}",
         f"Personality: {character.get('personality', '')}",
         f"Speech style: {character.get('speech_style', '')}",
