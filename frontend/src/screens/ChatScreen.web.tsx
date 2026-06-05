@@ -397,7 +397,9 @@ const {
 
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
-  const [showHouseSelection, setShowHouseSelection] = useState(false);
+  const [showHouseSelection, setShowHouseSelection] = useState(
+    () => !localStorage.getItem('hp_house')
+  );
   const [tipIndex, setTipIndex] = useState(0);
 
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
@@ -406,7 +408,9 @@ const {
     const firstMes = getFirstMessage(0);
     const personalizedMessage = firstMes.replace(/\{\{user\}\}/g, userName || '');
     setMessages([createMessage('ai', personalizedMessage)]);
-    setShowHouseSelection(true);
+    if (!localStorage.getItem('hp_house')) {
+      setShowHouseSelection(true);
+    }
   }, [setMessages, userName]);
 
   useEffect(() => {

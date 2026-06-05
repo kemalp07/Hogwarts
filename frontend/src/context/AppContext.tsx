@@ -33,11 +33,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [hogwartsHouse, setHogwartsHouse] = useState<string>('');
+  const [hogwartsHouse, setHogwartsHouse] = useState<string>(
+    () => localStorage.getItem('hp_house') || ''
+  );
 
   useEffect(() => {
     if (userName) localStorage.setItem('hp_user_name', userName);
   }, [userName]);
+
+  useEffect(() => {
+    if (hogwartsHouse) localStorage.setItem('hp_house', hogwartsHouse);
+  }, [hogwartsHouse]);
 
   return (
     <AppContext.Provider
