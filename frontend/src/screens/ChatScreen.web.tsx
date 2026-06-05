@@ -350,6 +350,14 @@ const {
   hogwartsHouse,
   setHogwartsHouse,
 } = useAppContext();
+
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }, []);
+
   const isWeb = Platform.OS === 'web';
   const flatListRef = useRef<FlatList<Message>>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -468,13 +476,8 @@ const {
         >
           <View style={styles.screen}>
             <View style={styles.header}>
-              <View style={styles.headerAvatar}>
-                <Text style={styles.headerInitial}>{NARRATOR_SYMBOL}</Text>
-              </View>
-              <View style={styles.headerTextWrap}>
-                <Text style={styles.headerTitle}>{NARRATOR_NAME}</Text>
-                <Text style={styles.headerSubtitle}>{NARRATOR_SUBTITLE}</Text>
-              </View>
+              <Text style={styles.headerTitle}>{NARRATOR_NAME}</Text>
+              <Text style={styles.headerSubtitle}>{NARRATOR_SUBTITLE}</Text>
             </View>
 
             <FlatList
@@ -612,40 +615,28 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   header: {
-    height: 56,
-    backgroundColor: 'rgba(10, 6, 2, 0.8)',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(245, 230, 200, 0.15)',
+    height: 64,
+    backgroundColor: 'rgba(5, 3, 1, 0.88)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#D97706',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
-  },
-  headerInitial: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  headerTextWrap: {
-    flex: 1,
   },
   headerTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#F5E6C8',
+    fontSize: 26,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'Cinzel, serif',
+    letterSpacing: 4,
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: '#CBB38C',
-    marginTop: 1,
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.45)',
+    letterSpacing: 3,
+    marginTop: 2,
+    fontFamily: 'Cinzel, serif',
   },
   list: {
     flex: 1,
@@ -833,30 +824,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   inputArea: {
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 14,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 40,
+    paddingTop: 12,
+    paddingBottom: 24,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   inputBoxSpacing: {
     marginBottom: 0,
   },
   inputBox: {
-    backgroundColor: 'rgba(15, 10, 5, 1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 24,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    minHeight: 70,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    maxWidth: 680,
+    maxWidth: 720,
   },
   textInput: {
     flex: 1,
