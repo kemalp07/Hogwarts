@@ -188,6 +188,14 @@ function TypingBubble() {
 type MessageBubbleProps = {
   item: Message;
   hogwartsHouse: string;
+  sessionId: string;
+  editingId: string | null;
+  editText: string;
+  menuId: string | null;
+  setEditText: (text: string) => void;
+  setEditingId: (id: string | null) => void;
+  setMenuId: (id: string | null) => void;
+  setMessages: (msgs: Message[] | ((prev: Message[]) => Message[])) => void;
 };
 
 function getCharacterAvatarSource(characterName?: string) {
@@ -370,18 +378,96 @@ function renderAIMessage(item: Message) {
   );
 }
 
-function MessageBubble({ item, hogwartsHouse }: MessageBubbleProps) {
-  if (item.role === 'user') {
+function MessageBubble({
+  item,
+  hogwartsHouse,
+  sessionId,
+  editingId,
+  editText,
+  menuId,
+  setEditText,
+  setEditingId,
+  setMenuId,
+  setMessages,
+}: MessageBubbleProps) {
+  const bubbleColor = houseColor(hogwartsHouse);
+
+  if (editingId === item.id) {
     return (
       <View style={styles.userRow}>
-        <View style={[styles.userBubble, { backgroundColor: houseColor(hogwartsHouse) }]}>
-          <Text style={[styles.messageText, styles.userMessageText]}>{item.text}</Text>
+        <TextInput
+          value={editText}
+          onChangeText={setEditText}
+          style={[styles.userBubble, styles.userEditInput, { backgroundColor: bubbleColor, color: '#fff' }]}
+          autoFocus
+          multiline
+        />
+        <View style={styles.userMessageActions}>
+          <Pressable
+            onPress={() => {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === item.id ? { ...m, text: editText } : m)),
+              );
+              setEditingId(null);
+            }}
+          >
+            <Text style={styles.userActionSave}>Kaydet</Text>
+          </Pressable>
+          <Pressable onPress={() => setEditingId(null)}>
+            <Text style={styles.userActionCancel}>İptal</Text>
+          </Pressable>
         </View>
       </View>
     );
   }
 
-  return renderAIMessage(item);
+  return (
+    <Pressable
+      onLongPress={() => setMenuId(item.id)}
+      onPress={() => setMenuId(null)}
+    >
+      <View style={styles.userRow}>
+        <View style={[styles.userBubble, { backgroundColor: bubbleColor }]}>
+          <Text style={[styles.messageText, styles.userMessageText]}>{item.text}</Text>
+        </View>
+        {menuId === item.id && (
+          <View style={styles.userMessageMenu}>
+            <Pressable
+              onPress={() => {
+                setEditText(item.text);
+                setEditingId(item.id);
+                setMenuId(null);
+              }}
+            >
+              <Text style={styles.userActionEdit}>✏️ Düzenle</Text>
+            </Pressable>
+            <Pressable
+              onPress={async () => {
+                setMessages((prev) => prev.filter((m) => m.id !== item.id));
+                setMenuId(null);
+
+                try {
+                  await fetch('http://localhost:8001/api/delete-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      session_id: sessionId,
+                      content: item.text,
+                      role: 'user',
+                    }),
+                  });
+                } catch {
+                  // Frontend already updated; backend sync is best-effort.
+                }
+              }}
+            >
+              <Text style={styles.userActionDelete}>🗑️ Sil</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+    </Pressable>
+  );
 }
 
 const INPUT_TIPS = [
@@ -852,6 +938,9 @@ const {
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [scheduleData, setScheduleData] = useState<any>(null);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState('');
+  const [menuId, setMenuId] = useState<string | null>(null);
 
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
 
@@ -1140,7 +1229,24 @@ const {
               ref={flatListRef}
               data={messages}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (item.role === 'ai' ? renderAIMessage(item) : <MessageBubble item={item} hogwartsHouse={hogwartsHouse || playerHouse} />)}
+              renderItem={({ item }) =>
+                item.role === 'ai' ? (
+                  renderAIMessage(item)
+                ) : (
+                  <MessageBubble
+                    item={item}
+                    hogwartsHouse={hogwartsHouse || playerHouse}
+                    sessionId={sessionId}
+                    editingId={editingId}
+                    editText={editText}
+                    menuId={menuId}
+                    setEditText={setEditText}
+                    setEditingId={setEditingId}
+                    setMenuId={setMenuId}
+                    setMessages={setMessages}
+                  />
+                )
+              }
               onContentSizeChange={() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
               }}
@@ -1335,6 +1441,41 @@ const styles = StyleSheet.create({
     maxWidth: '72%',
     flexShrink: 1,
     marginRight: 16,
+  },
+  userEditInput: {
+    minWidth: 120,
+    textAlignVertical: 'top',
+  },
+  userMessageActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+    marginRight: 16,
+    alignSelf: 'flex-end',
+  },
+  userMessageMenu: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 4,
+    marginRight: 16,
+    justifyContent: 'flex-end',
+    alignSelf: 'flex-end',
+  },
+  userActionSave: {
+    color: '#c9a84c',
+    fontSize: 13,
+  },
+  userActionCancel: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 13,
+  },
+  userActionEdit: {
+    color: '#c9a84c',
+    fontSize: 12,
+  },
+  userActionDelete: {
+    color: '#e87a7a',
+    fontSize: 12,
   },
   aiRow: {
     width: '100%',

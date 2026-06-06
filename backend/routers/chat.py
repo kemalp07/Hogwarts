@@ -382,6 +382,22 @@ async def run_simulation_endpoint(request: Request):
     })
 
 
+@router.post("/delete-message")
+async def delete_message_endpoint(request: Request):
+    body = await request.json()
+    session_id = body.get("session_id", "")
+    content = body.get("content", "")
+    role = body.get("role", "user")
+
+    if not session_id or not content:
+        raise HTTPException(status_code=400, detail="session_id ve content gerekli")
+
+    if supabase:
+        supabase.table("messages").delete().eq("session_id", session_id).eq("content", content).eq("role", role).execute()
+
+    return {"status": "ok"}
+
+
 @router.delete("/api/messages")
 async def delete_messages(session_id: str = Query(..., min_length=1)):
     """Delete all messages and memories for a given session_id."""
