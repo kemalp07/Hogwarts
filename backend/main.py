@@ -20,17 +20,10 @@ app = FastAPI()
 async def startup_event():
     start_organic_scheduler()
 
-# Dev CORS: frontend static server (5173) needs to call backend (8000)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-        "http://127.0.0.1:4190",
-        "http://localhost:4190",
-    ],
-    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1)(:\d+)?$",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
