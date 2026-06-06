@@ -8,6 +8,8 @@ Hogwarts Dünya Simülasyonu
 import json
 import logging
 import os
+import random
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -217,3 +219,80 @@ async def run_point_simulation(
         simulate_world_events(session_id, week, day),
         return_exceptions=True,
     )
+
+
+_scheduler_started = False
+_scheduler_lock = threading.Lock()
+
+
+def _get_all_active_sessions() -> list[str]:
+    """Son 2 saatte aktif olan sessionları çek."""
+    if not supabase:
+        return []
+    try:
+        resp = supabase.table("game_state").select("session_id").execute()
+        return [row["session_id"] for row in (resp.data or [])]
+    except Exception as e:
+        logger.error(f"_get_all_active_sessions error: {e}")
+        return []
+
+
+def _apply_organic_drift():
+    """
+    Her 30 saniyede bir çalışır.
+    Tüm aktif sessionlara tamamen random küçük puan değişimi uygular.
+    AI yok — sadece random sayılar.
+    """
+    sessions = _get_all_active_sessions()
+    if not sessions:
+        return
+
+    for session_id in sessions:
+        try:
+            current = _get_points(session_id)
+            changes = []
+            for house in HOUSES:
+                if random.random() > 0.6:
+                    continue
+                magnitude = random.choice([2, 3, 4, 5])
+                direction = random.choice([-1, 1])
+                delta = magnitude * direction
+                if current.get(house, 0) + delta < 0:
+                    delta = abs(delta)
+                changes.append({
+                    "house": house,
+                    "delta": delta,
+                    "reason": "Hogwarts'ta günlük organik değişim",
+                    "source": "organic_drift",
+                })
+            if changes:
+                _apply_changes(session_id, changes)
+                logger.debug(f"[{session_id}] Organic drift: {[(c['house'], c['delta']) for c in changes]}")
+        except Exception as e:
+            logger.error(f"Organic drift error for {session_id}: {e}")
+
+
+def start_organic_scheduler():
+    """
+    FastAPI startup'ta bir kez çağrılır.
+    Her 30 saniyede _apply_organic_drift çalıştırır.
+    """
+    global _scheduler_started
+    with _scheduler_lock:
+        if _scheduler_started:
+            return
+        _scheduler_started = True
+
+    def scheduler_loop():
+        import time
+        logger.info("Organic drift scheduler started — running every 30s")
+        while True:
+            time.sleep(30)
+            try:
+                _apply_organic_drift()
+            except Exception as e:
+                logger.error(f"Scheduler loop error: {e}")
+
+    thread = threading.Thread(target=scheduler_loop, daemon=True)
+    thread.start()
+    logger.info("Organic drift scheduler thread launched")

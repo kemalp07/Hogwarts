@@ -848,6 +848,12 @@ const {
   useEffect(() => {
     if (!sessionId) return;
     fetchHousePoints();
+
+    const interval = setInterval(() => {
+      fetchHousePoints();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [sessionId]);
 
   return (
