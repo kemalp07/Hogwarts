@@ -330,9 +330,20 @@ function parseAIMessage(text: string): React.ReactNode {
 function renderAIMessage(item: Message) {
   const taggedBlocks = parseTaggedResponse(item.text);
 
+  // Aynı karakterin ardışık bloklarını birleştir
+  const mergedBlocks = taggedBlocks.reduce((acc: typeof taggedBlocks, block) => {
+    const last = acc[acc.length - 1];
+    if (last && last.tag === block.tag) {
+      last.content = last.content + '\n' + block.content;
+      return acc;
+    }
+    acc.push({ ...block });
+    return acc;
+  }, []);
+
   return (
     <>
-      {taggedBlocks.map((block, index) => {
+      {mergedBlocks.map((block, index) => {
         const avatarSource = TAG_AVATARS[block.tag] ?? TAG_AVATARS['UNKNOWN'];
 
         return (
