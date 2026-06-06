@@ -24,7 +24,7 @@ from ..services.house_points_service import (
     get_missed_classes_for_prompt,
     build_missed_class_context,
 )
-from ..services.world_simulation import run_point_simulation, extract_time_from_response
+from ..services.world_simulation import run_point_simulation, extract_time_from_response, extract_inventory_and_location
 from ..services.relationship_service import analyze_relationship_changes, build_relationship_context
 from ..db.supabase_client import insert_message, supabase
 import traceback
@@ -364,6 +364,10 @@ async def run_simulation_endpoint(request: Request):
                 advance_hour(session_id, hours=1)
             # Sonra AI tag'i varsa override et (büyük atlamalar için)
             await extract_time_from_response(session_id, ai_response)
+            try:
+                await extract_inventory_and_location(session_id, ai_response)
+            except Exception as e:
+                logger.error(f"extract_inventory_and_location error: {e}")
             # Her 3 mesajda bir episodic memory kaydet
             msg_count = get_message_count(session_id)
             if msg_count > 0 and msg_count % 3 == 0:

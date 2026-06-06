@@ -391,6 +391,11 @@ Every response MUST use these tags. No exceptions.
 [BLAISE] Use for Blaise Zabini's dialogue and reactions.
 [CHARACTER:Name] Use this for any other character not listed above.
 
+[LOCATION: konum_adı] — Kemal'in konumu değiştiğinde kullan. Örnek: [LOCATION: great_hall], [LOCATION: gryffindor_tower], [LOCATION: library], [LOCATION: dungeons], [LOCATION: quidditch_field], [LOCATION: corridor]
+[ITEM+: eşya_adı | tür | açıklama] — Kemal bir eşya edindiğinde kullan. Örnek: [ITEM+: Gizem Haritası | map | Hogwarts'ın tüm koridorlarını gösterir]
+[ITEM-: eşya_adı] — Kemal bir eşyayı kaybettiğinde veya verdiğinde kullan.
+Bu tag'ler yanıtın herhangi bir yerinde olabilir, [TIME:] gibi zorunlu değil — sadece gerçekten değişim olduğunda kullan.
+
 Rules:
 - TAGS MUST ALWAYS BE AT THE VERY START OF A NEW LINE. Never mid-sentence.
 - WRONG: "Ron, yapma öyle," [HARRY] diyerek arkadaşının omzuna vurdu

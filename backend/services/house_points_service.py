@@ -425,6 +425,19 @@ def build_current_time_context(session_id: str) -> str:
         missed_names = [c["subject"] for c in missed_classes]
         lines.append(f"KAÇIRILAN DERSLER: {', '.join(missed_names)} — öğretmenler bunu hatırlıyor")
 
+    # Konum
+    location = get_location(session_id)
+    location_display = location.replace("_", " ").title()
+    lines.append(f"KEMAL'İN MEVCUT KONUMU: {location_display}")
+
+    # Envanter
+    inventory = get_inventory(session_id)
+    if inventory:
+        items = ", ".join(f"{i['item_name']}" for i in inventory)
+        lines.append(f"KEMAL'İN ENVANTERİ: {items}")
+    else:
+        lines.append("KEMAL'İN ENVANTERİ: Asa (akasya, 11 inç), Büyücülük kitapları, Pelerin")
+
     return "\n".join(lines)
 
 
@@ -531,3 +544,61 @@ def build_narrator_day_message(session_id: str) -> str:
         lines.append(f"• **{cls['time']}** {cls['subject']}{teacher}{penalty_note}.{hint}")
 
     return "\n".join(lines)
+
+
+def get_inventory(session_id: str) -> list:
+    if not supabase:
+        return []
+    try:
+        resp = supabase.table("player_inventory").select("item_name, item_type, description").eq("session_id", session_id).execute()
+        return resp.data or []
+    except Exception as e:
+        logger.error(f"get_inventory error: {e}")
+        return []
+
+
+def add_inventory_item(session_id: str, item_name: str, item_type: str = "misc", description: str = "") -> bool:
+    if not supabase:
+        return False
+    try:
+        supabase.table("player_inventory").upsert({
+            "session_id": session_id,
+            "item_name": item_name,
+            "item_type": item_type,
+            "description": description,
+        }, on_conflict="session_id,item_name").execute()
+        return True
+    except Exception as e:
+        logger.error(f"add_inventory_item error: {e}")
+        return False
+
+
+def remove_inventory_item(session_id: str, item_name: str) -> bool:
+    if not supabase:
+        return False
+    try:
+        supabase.table("player_inventory").delete().eq("session_id", session_id).eq("item_name", item_name).execute()
+        return True
+    except Exception as e:
+        logger.error(f"remove_inventory_item error: {e}")
+        return False
+
+
+def update_location(session_id: str, location: str) -> bool:
+    if not supabase:
+        return False
+    try:
+        supabase.table("game_state").upsert({
+            "session_id": session_id,
+            "current_location": location,
+            "updated_at": datetime.utcnow().isoformat(),
+        }, on_conflict="session_id").execute()
+        return True
+    except Exception as e:
+        logger.error(f"update_location error: {e}")
+        return False
+
+
+def get_location(session_id: str) -> str:
+    state = get_game_state(session_id)
+    return state.get("current_location", "gryffindor_tower")

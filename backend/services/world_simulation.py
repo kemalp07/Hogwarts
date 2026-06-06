@@ -501,3 +501,33 @@ def start_organic_scheduler():
     thread = threading.Thread(target=scheduler_loop, daemon=True)
     thread.start()
     logger.info("Organic drift scheduler thread launched")
+
+
+async def extract_inventory_and_location(session_id: str, ai_response: str):
+    """
+    AI yanıtındaki [LOCATION:], [ITEM+:], [ITEM-:] tag'lerini parse et.
+    """
+    if not ai_response:
+        return
+
+    from .house_points_service import add_inventory_item, remove_inventory_item, update_location
+
+    # Konum
+    location_match = re.search(r'\[LOCATION:\s*([^\]]+)\]', ai_response, re.IGNORECASE)
+    if location_match:
+        location = location_match.group(1).strip().lower().replace(" ", "_")
+        update_location(session_id, location)
+
+    # Envantere ekle
+    for match in re.finditer(r'\[ITEM\+:\s*([^\]]+)\]', ai_response, re.IGNORECASE):
+        raw = match.group(1).strip()
+        parts = [p.strip() for p in raw.split("|")]
+        item_name = parts[0]
+        item_type = parts[1] if len(parts) > 1 else "misc"
+        description = parts[2] if len(parts) > 2 else ""
+        add_inventory_item(session_id, item_name, item_type, description)
+
+    # Envanterden çıkar
+    for match in re.finditer(r'\[ITEM-:\s*([^\]]+)\]', ai_response, re.IGNORECASE):
+        item_name = match.group(1).strip()
+        remove_inventory_item(session_id, item_name)
