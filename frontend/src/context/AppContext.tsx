@@ -7,67 +7,76 @@ export type Message = {
   characterName?: string;
 };
 
-export type AppContextType = {
-  userName: string;
-  setUserName: (name: string) => void;
+export type Character = {
+  id: string;
+  name: string;
+  gender: string;
+  traits: string[];
+  origin: string;
+  height: string;
+  hairColor: string;
+  fear: string;
+  hobby: string;
+  secretTrait: string;
+  house: string;
   sessionId: string;
-  setSessionId: (id: string) => void;
+  createdAt: string;
+};
+
+export type AppContextType = {
+  characters: Character[];
+  setCharacters: (chars: Character[] | ((prev: Character[]) => Character[])) => void;
+  activeCharacter: Character | null;
+  setActiveCharacter: (char: Character | null) => void;
   messages: Message[];
   setMessages: (msgs: Message[] | ((prev: Message[]) => Message[])) => void;
   isLoading: boolean;
   setIsLoading: (val: boolean) => void;
-  hogwartsHouse: string;
-  setHogwartsHouse: (house: string) => void;
-  characterProfile: any;
-  setCharacterProfile: (profile: any) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [userName, setUserName] = useState<string>(() => localStorage.getItem('hp_user_name') || '');
-  const [sessionId, setSessionId] = useState<string>(() => {
-    const existing = localStorage.getItem('hp_session_id');
-    if (existing) return existing;
-    const newId = crypto.randomUUID();
-    localStorage.setItem('hp_session_id', newId);
-    return newId;
+  const [characters, setCharacters] = useState<Character[]>(
+    () => {
+      const saved = localStorage.getItem('hp_characters');
+      return saved ? JSON.parse(saved) : [];
+    }
+  );
+  const [activeCharacter, setActiveCharacter] = useState<Character | null>(() => {
+    const activeId = localStorage.getItem('hp_active_character_id');
+    if (!activeId) return null;
+    const saved = localStorage.getItem('hp_characters');
+    if (!saved) return null;
+    const chars = JSON.parse(saved);
+    return chars.find((c: Character) => c.id === activeId) || null;
   });
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [hogwartsHouse, setHogwartsHouse] = useState<string>(
-    () => localStorage.getItem('hp_house') || ''
-  );
-  const [characterProfile, setCharacterProfile] = useState(
-    () => {
-      const saved = localStorage.getItem('hp_character');
-      return saved ? JSON.parse(saved) : null;
+
+  useEffect(() => {
+    localStorage.setItem('hp_characters', JSON.stringify(characters));
+  }, [characters]);
+
+  useEffect(() => {
+    if (activeCharacter) {
+      localStorage.setItem('hp_active_character_id', activeCharacter.id);
+    } else {
+      localStorage.removeItem('hp_active_character_id');
     }
-  );
-
-  useEffect(() => {
-    if (userName) localStorage.setItem('hp_user_name', userName);
-  }, [userName]);
-
-  useEffect(() => {
-    if (hogwartsHouse) localStorage.setItem('hp_house', hogwartsHouse);
-  }, [hogwartsHouse]);
+  }, [activeCharacter]);
 
   return (
     <AppContext.Provider
       value={{
-        userName,
-        setUserName,
-        sessionId,
-        setSessionId,
+        characters,
+        setCharacters,
+        activeCharacter,
+        setActiveCharacter,
         messages,
         setMessages,
         isLoading,
         setIsLoading,
-        hogwartsHouse,
-        setHogwartsHouse,
-        characterProfile,
-        setCharacterProfile,
       }}
     >
       {children}

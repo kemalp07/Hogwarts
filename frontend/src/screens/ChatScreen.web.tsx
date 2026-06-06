@@ -372,18 +372,45 @@ const INPUT_TIPS = [
   '🔮 Duygu belirt: Biraz tedirgin hissediyorum',
 ];
 
-export const ChatScreen = () => {
+export const ChatScreen = ({ navigation }: any) => {
 const {
-  userName,
-  sessionId,
+  activeCharacter,
+  characters,
+  setCharacters,
   messages,
   setMessages,
   isLoading,
   setIsLoading,
-  hogwartsHouse,
-  setHogwartsHouse,
-  characterProfile,
 } = useAppContext();
+
+  const userName = activeCharacter?.name || '';
+  const sessionId = activeCharacter?.sessionId || '';
+  const hogwartsHouse = activeCharacter?.house || '';
+  const characterProfile = activeCharacter ? {
+    gender: activeCharacter.gender,
+    traits: activeCharacter.traits,
+    origin: activeCharacter.origin,
+    height: activeCharacter.height,
+    hairColor: activeCharacter.hairColor,
+    fear: activeCharacter.fear,
+    hobby: activeCharacter.hobby,
+    secretTrait: activeCharacter.secretTrait,
+  } : null;
+
+  const setHogwartsHouse = (house: string) => {
+    if (!activeCharacter) return;
+    const updatedCharacters = characters.map(c =>
+      c.id === activeCharacter.id ? { ...c, house } : c
+    );
+    setCharacters(updatedCharacters);
+  };
+
+  // Redirect to onboarding if no active character
+  useEffect(() => {
+    if (!activeCharacter) {
+      navigation.navigate('Onboarding');
+    }
+  }, [activeCharacter, navigation]);
 
   useEffect(() => {
     const link = document.createElement('link');
@@ -399,22 +426,19 @@ const {
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
   const [showHouseSelection, setShowHouseSelection] = useState<boolean>(
-    () => {
-      const savedHouse = localStorage.getItem('hp_house');
-      return !savedHouse;
-    }
+    () => !activeCharacter?.house
   );
   const [tipIndex, setTipIndex] = useState(0);
 
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
 
   useEffect(() => {
-    if (localStorage.getItem('hp_house')) return; // already played, skip
+    if (activeCharacter?.house) return; // already played, skip
     const firstMes = getFirstMessage(0);
     const personalizedMessage = firstMes.replace(/\{\{user\}\}/g, userName || '');
     setMessages([createMessage('ai', personalizedMessage)]);
     setShowHouseSelection(true);
-  }, [setMessages, userName]);
+  }, [setMessages, userName, activeCharacter]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -424,7 +448,7 @@ const {
   }, []);
 
   useEffect(() => {
-    if (!userName || !sessionId) return;
+    if (!activeCharacter) return;
     if (messages.length > 0) return;
 
     const loadHistory = async () => {
@@ -451,7 +475,7 @@ const {
     };
 
     loadHistory();
-  }, [userName, sessionId]);
+  }, [activeCharacter, sessionId]);
 
   // background video removed: using solid color background for web
 
@@ -507,7 +531,6 @@ const {
   };
 
   const handleHouseSelect = async (house: string) => {
-    localStorage.setItem('hp_house', house);
     setHogwartsHouse(house);
     setShowHouseSelection(false);
 

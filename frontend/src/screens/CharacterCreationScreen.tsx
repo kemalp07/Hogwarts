@@ -8,7 +8,9 @@ import {
   Platform,
   ImageBackground,
   ScrollView,
+  TextInput,
 } from 'react-native';
+import { useAppContext, Character } from '../context/AppContext';
 
 type CharacterCreationScreenProps = {
   navigation: any;
@@ -24,6 +26,8 @@ const HOBBIES = ['Quidditch', 'Kitap okuma', 'Büyü araştırma', 'Müzik', 'Do
 const SECRET_TRAITS = ['Aslında çok kırılgansın', 'Derin bir sırrın var', 'Geçmişinde karanlık bir olay var', 'Gizli bir yeteneğin var', 'Biri seni takip ediyor'];
 
 export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ navigation }) => {
+  const { characters, setCharacters, setActiveCharacter } = useAppContext();
+  const [name, setName] = useState('');
   const [gender, setGender] = useState('');
   const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
   const [origin, setOrigin] = useState('');
@@ -51,9 +55,11 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
   };
 
   const handleContinue = () => {
-    if (!gender || selectedTraits.length === 0 || !origin || !height || !hairColor || !fear || !hobby || !secretTrait) return;
+    if (!name || !gender || selectedTraits.length === 0 || !origin || !height || !hairColor || !fear || !hobby || !secretTrait) return;
 
-    const character = {
+    const newCharacter: Character = {
+      id: crypto.randomUUID(),
+      name,
       gender,
       traits: selectedTraits,
       origin,
@@ -62,13 +68,18 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
       fear,
       hobby,
       secretTrait,
+      house: '',
+      sessionId: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
     };
 
-    localStorage.setItem('hp_character', JSON.stringify(character));
+    const updatedCharacters = [...characters, newCharacter];
+    setCharacters(updatedCharacters);
+    setActiveCharacter(newCharacter);
     navigation.navigate('Chat');
   };
 
-  const isButtonDisabled = !gender || selectedTraits.length === 0 || !origin || !height || !hairColor || !fear || !hobby || !secretTrait;
+  const isButtonDisabled = !name || !gender || selectedTraits.length === 0 || !origin || !height || !hairColor || !fear || !hobby || !secretTrait;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -81,6 +92,17 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
           <View style={styles.content}>
             <Text style={styles.title}>Karakterini Oluştur</Text>
             <Text style={styles.subtitle}>Kendini tanıt, genç büyücü</Text>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>İsim</Text>
+              <TextInput
+                style={styles.nameInput}
+                placeholder="Adını gir..."
+                placeholderTextColor="rgba(245, 220, 180, 0.4)"
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Cinsiyet</Text>
@@ -346,6 +368,17 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     fontStyle: 'italic',
     letterSpacing: 1,
+  },
+  nameInput: {
+    width: '100%',
+    height: 48,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 220, 180, 0.25)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#F5E6C8',
   },
   section: {
     width: '100%',

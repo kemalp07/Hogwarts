@@ -3,23 +3,21 @@ import {
   StyleSheet,
   Text,
   View,
-  TextInput,
   Pressable,
   SafeAreaView,
   Platform,
   ImageBackground,
   Image,
+  ScrollView,
 } from 'react-native';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext, Character } from '../context/AppContext';
 
 type OnboardingScreenProps = {
   navigation: any;
 };
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
-  const [inputValue, setInputValue] = useState('');
-  const { setUserName } = useAppContext();
-  const hasSavedCharacter = !!localStorage.getItem('hp_character');
+  const { characters, setCharacters, setActiveCharacter } = useAppContext();
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -30,43 +28,14 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
     }
   }, []);
 
-  useEffect(() => {
-    if (localStorage.getItem('hp_user_name')) {
-      if (hasSavedCharacter) {
-        navigation.navigate('Chat');
-      } else {
-        navigation.navigate('CharacterCreation');
-      }
-    }
-  }, [hasSavedCharacter]);
-
-  const handleStartPress = () => {
-    const trimmedName = inputValue.trim();
-    if (trimmedName.length > 0) {
-      setUserName(trimmedName);
-      navigation.navigate('CharacterCreation');
-    }
-  };
-
-  const handleContinue = () => {
+  const handleSelectCharacter = (character: Character) => {
+    setActiveCharacter(character);
     navigation.navigate('Chat');
   };
 
   const handleNewCharacter = () => {
-    localStorage.removeItem('hp_character');
-    localStorage.removeItem('hp_house');
-    localStorage.removeItem('hp_session_id');
-    const newSession = Math.random().toString(36).slice(2);
-    localStorage.setItem('hp_session_id', newSession);
     navigation.navigate('CharacterCreation');
   };
-
-  const isButtonDisabled = inputValue.trim().length === 0;
-
-  const WEB_INPUT_RESET =
-    Platform.OS === 'web'
-      ? ({ outlineWidth: 0, outlineStyle: 'none', boxShadow: 'none' } as any)
-      : undefined;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,56 +52,43 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
 
         <Text style={styles.title}>Hogwarts'a Hoş Geldin</Text>
 
-        {hasSavedCharacter ? (
-          <>
-            <Text style={styles.subtitle}>Kayıtlı karakterin var</Text>
-
-            <Pressable
-              style={styles.button}
-              onPress={handleContinue}
-            >
-              <Text style={styles.buttonText}>Devam Et</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={handleNewCharacter}
-            >
-              <Text style={styles.secondaryButtonText}>Yeni Karakter</Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text style={styles.subtitle}>Adın ne, genç büyücü?</Text>
-
-            <TextInput
-              style={[styles.input, WEB_INPUT_RESET]}
-              placeholder="Adını gir..."
-              placeholderTextColor="rgba(245, 220, 180, 0.4)"
-              value={inputValue}
-              onChangeText={setInputValue}
-              editable={true}
-            />
-
-            <Pressable
-              style={[
-                styles.button,
-                isButtonDisabled && styles.buttonDisabled,
-              ]}
-              onPress={handleStartPress}
-              disabled={isButtonDisabled}
-            >
-              <Text
-                style={[
-                  styles.buttonText,
-                  isButtonDisabled && styles.buttonTextDisabled,
-                ]}
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {characters.length === 0 ? (
+            <View style={styles.centerContent}>
+              <Text style={styles.subtitle}>Henüz karakterin yok</Text>
+              <Pressable
+                style={styles.button}
+                onPress={handleNewCharacter}
               >
-                Hogwarts'a Başla
-              </Text>
-            </Pressable>
-          </>
-        )}
+                <Text style={styles.buttonText}>Yeni Karakter Oluştur</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.characterList}>
+              {characters.map((character) => (
+                <Pressable
+                  key={character.id}
+                  style={styles.characterCard}
+                  onPress={() => handleSelectCharacter(character)}
+                >
+                  <Text style={styles.characterName}>{character.name}</Text>
+                  <View style={styles.characterDetails}>
+                    <Text style={styles.characterHouse}>{character.house || 'Ev seçilmedi'}</Text>
+                    <Text style={styles.characterTraits}>
+                      {character.traits.slice(0, 2).join(', ')}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
+              <Pressable
+                style={styles.newCharacterButton}
+                onPress={handleNewCharacter}
+              >
+                <Text style={styles.newCharacterButtonText}>+ Yeni Karakter</Text>
+              </Pressable>
+            </View>
+          )}
+        </ScrollView>
       </View>
       </ImageBackground>
     </SafeAreaView>
@@ -178,25 +134,71 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 1,
   },
-  input: {
-    width: '72%',
-    maxWidth: 360,
-    alignSelf: 'center',
-    height: 48,
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    alignItems: 'center',
+    paddingBottom: 40,
+  },
+  centerContent: {
+    alignItems: 'center',
+  },
+  characterList: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  characterCard: {
+    width: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     borderWidth: 1,
     borderColor: 'rgba(245, 220, 180, 0.25)',
     borderRadius: 12,
     paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#F5E6C8',
-    textAlign: 'center',
+    paddingVertical: 12,
     marginBottom: 12,
+  },
+  characterName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#F5E6C8',
+    marginBottom: 4,
+  },
+  characterDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  characterHouse: {
+    fontSize: 12,
+    color: 'rgba(245, 220, 180, 0.7)',
+    fontStyle: 'italic',
+  },
+  characterTraits: {
+    fontSize: 11,
+    color: 'rgba(245, 220, 180, 0.5)',
+  },
+  newCharacterButton: {
+    width: '100%',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 220, 180, 0.3)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  newCharacterButtonText: {
+    fontSize: 14,
+    color: 'rgba(245, 220, 180, 0.7)',
+    fontWeight: '500',
   },
   button: {
     width: '72%',
     maxWidth: 360,
-    alignSelf: 'center',
     height: 48,
     backgroundColor: 'rgba(120, 50, 8, 0.9)',
     borderRadius: 12,
@@ -205,35 +207,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  buttonDisabled: {
-    backgroundColor: 'rgba(60, 40, 10, 0.5)',
-  },
   buttonText: {
     color: '#F5E6C8',
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 2,
-  },
-  buttonTextDisabled: {
-    color: 'rgba(245, 220, 180, 0.4)',
-  },
-  secondaryButton: {
-    width: '72%',
-    maxWidth: 360,
-    alignSelf: 'center',
-    height: 48,
-    backgroundColor: 'transparent',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(245, 220, 180, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  secondaryButtonText: {
-    color: 'rgba(245, 220, 180, 0.7)',
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: 1,
   },
 });
