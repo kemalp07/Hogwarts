@@ -20,9 +20,12 @@ import {
 import { Asset } from 'expo-asset';
 import { useAppContext, Message, saveCharacterToDB } from '../context/AppContext';
 import { getFirstMessage } from '../services/characterCard';
-import { sendMessage as sendAiMessage } from '../services/aiService';
+import { deleteMessage, sendMessage as sendAiMessage, updateMessage } from '../services/aiService';
+import { housePointsEqual, normalizeHousePoints } from '../utils/housePoints';
 
 const NARRATOR_NAME = 'Hogwarts';
+const HOUSE_POINTS_POLL_MS = 3000;
+const HOUSE_POINTS_REFRESH_DELAYS = [1500, 3500, 6000, 10000, 18000] as const;
 const NARRATOR_SUBTITLE = 'Büyücü Dünyası';
 const NARRATOR_SYMBOL = '⚡';
 const HOUSES = ['Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin'] as const;
@@ -234,19 +237,30 @@ async function deleteMessageItem(
   setMessages: MessageEditProps['setMessages'],
 ) {
   setMessages((prev) => prev.filter((m) => m.id !== item.id));
+  await deleteMessage(sessionId, item.text, role);
+}
 
-  try {
-    await fetch('https://hogwarts-2.onrender.com/api/delete-message', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        session_id: sessionId,
-        content: item.text,
-        role,
-      }),
-    });
-  } catch {
-    // Frontend already updated; backend sync is best-effort.
+async function saveMessageEdit(
+  sessionId: string,
+  item: Message,
+  newText: string,
+  role: 'user' | 'assistant',
+  setMessages: MessageEditProps['setMessages'],
+  setEditingId: (id: string | null) => void,
+) {
+  const trimmed = newText.trim();
+  if (!trimmed) {
+    setEditingId(null);
+    return;
+  }
+
+  setMessages((prev) =>
+    prev.map((m) => (m.id === item.id ? { ...m, text: trimmed } : m)),
+  );
+  setEditingId(null);
+
+  if (trimmed !== item.text) {
+    await updateMessage(sessionId, item.text, trimmed, role);
   }
 }
 
@@ -525,12 +539,7 @@ function AIMessageBubble({
             multiline
           />
           <EditMessageActions
-            onSave={() => {
-              setMessages((prev) =>
-                prev.map((m) => (m.id === item.id ? { ...m, text: editText } : m)),
-              );
-              setEditingId(null);
-            }}
+            onSave={() => saveMessageEdit(sessionId, item, editText, 'assistant', setMessages, setEditingId)}
             onCancel={() => setEditingId(null)}
           />
         </View>
@@ -625,12 +634,7 @@ function MessageBubble({
           multiline
         />
         <EditMessageActions
-          onSave={() => {
-            setMessages((prev) =>
-              prev.map((m) => (m.id === item.id ? { ...m, text: editText } : m)),
-            );
-            setEditingId(null);
-          }}
+          onSave={() => saveMessageEdit(sessionId, item, editText, 'user', setMessages, setEditingId)}
           onCancel={() => setEditingId(null)}
         />
       </View>
@@ -1037,7 +1041,21 @@ const {
 
   // House points animation state
   const prevHousePoints = useRef({ gryffindor: 0, hufflepuff: 0, ravenclaw: 0, slytherin: 0 });
+  const pointsFloorStartedAtRef = useRef<number | null>(null);
   const [displayPoints, setDisplayPoints] = useState({ gryffindor: 0, hufflepuff: 0, ravenclaw: 0, slytherin: 0 });
+
+  const applyHousePoints = (points: Record<string, number>) => {
+    setHousePoints((prev: Record<string, number>) => {
+      const next = normalizeHousePoints(points, pointsFloorStartedAtRef.current);
+      return housePointsEqual(prev, next) ? prev : next;
+    });
+  };
+
+  const scheduleHousePointsRefresh = () => {
+    HOUSE_POINTS_REFRESH_DELAYS.forEach((delay) => {
+      setTimeout(() => fetchHousePoints(), delay);
+    });
+  };
   const [playerHouse, setPlayerHouse] = useState<string>('gryffindor');
   const animationRefs = useRef<Record<string, any>>({});
 
@@ -1235,7 +1253,8 @@ const {
 
     try {
       const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse, sessionId, characterProfile, playerAttraction);
-      if (aiResponse.housePoints) setHousePoints(aiResponse.housePoints);
+      if (aiResponse.housePoints) applyHousePoints(aiResponse.housePoints);
+      scheduleHousePointsRefresh();
       if (aiResponse.gameState) setGameState(aiResponse.gameState);
       if (aiResponse.narratorInjection) {
         const injectionMsg: Message = {
@@ -1251,9 +1270,7 @@ const {
           createMessage('ai', aiResponse.text, aiResponse.characterName),
         ]);
       }
-      setTimeout(() => fetchHousePoints(), 4000);
-      setTimeout(() => fetchHousePoints(), 8000);
-      setTimeout(() => fetchHousePoints(), 15000);
+      scheduleHousePointsRefresh();
       setTimeout(() => fetchSchedule(), 2000);
     } catch (error) {
       console.error('AI Error:', error);
@@ -1300,7 +1317,8 @@ const {
 
     try {
       const response = await sendAiMessage(nextMessages, userName, house, sessionId, characterProfile, playerAttraction);
-      if (response.housePoints) setHousePoints(response.housePoints);
+      if (response.housePoints) applyHousePoints(response.housePoints);
+      scheduleHousePointsRefresh();
       if (response.gameState) setGameState(response.gameState);
       if (response.narratorInjection) {
         const injectionMsg: Message = {
@@ -1316,9 +1334,7 @@ const {
           createMessage('ai', response.text, response.characterName),
         ]);
       }
-      setTimeout(() => fetchHousePoints(), 4000);
-      setTimeout(() => fetchHousePoints(), 8000);
-      setTimeout(() => fetchHousePoints(), 15000);
+      scheduleHousePointsRefresh();
       setTimeout(() => fetchSchedule(), 2000);
     } catch (error) {
       console.error('AI Error:', error);
@@ -1347,7 +1363,13 @@ const {
       const res = await fetch(`https://hogwarts-2.onrender.com/api/house-points?session_id=${encodeURIComponent(sessionId)}`);
       if (!res.ok) return;
       const data = await res.json();
-      if (data.points) setHousePoints(data.points);
+      if (data.points_floor_started_at) {
+        const startedMs = Date.parse(data.points_floor_started_at);
+        if (Number.isFinite(startedMs)) {
+          pointsFloorStartedAtRef.current = startedMs;
+        }
+      }
+      if (data.points) applyHousePoints(data.points);
       if (data.game_state?.player_house) {
         setPlayerHouse(data.game_state.player_house);
       }
@@ -1402,7 +1424,7 @@ const {
 
     const interval = setInterval(() => {
       fetchHousePoints();
-    }, 30000);
+    }, HOUSE_POINTS_POLL_MS);
 
     return () => clearInterval(interval);
   }, [sessionId]);

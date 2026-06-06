@@ -18,6 +18,23 @@ import httpx
 from google.auth.transport.requests import Request as GoogleAuthRequest
 
 from db.supabase_client import supabase
+from services.house_points_service import (
+    MAX_HOUSE_POINT_SPREAD,
+    ORGANIC_DRIFT_HOUSE_CHANCE,
+    ORGANIC_DRIFT_INTERVAL_SECONDS,
+    ORGANIC_DRIFT_MIN_CHANGES,
+    apply_point_delta_to_scores,
+    cap_delta_for_spread,
+    get_house_points,
+    normalize_house_point_delta,
+    pick_organic_drift_direction,
+    random_house_point_delta,
+    rebalance_points_spread,
+    rubber_band_drift_pairs,
+    RUBBER_BAND_SPREAD,
+    save_house_points,
+    snap_points_to_fives,
+)
 from services.vertex_ai import DEFAULT_LOCATION, DEFAULT_MODEL, _load_service_account
 
 logger = logging.getLogger(__name__)
@@ -86,32 +103,29 @@ def _get_points(session_id: str) -> dict:
 def _apply_changes(session_id: str, changes: list):
     if not supabase or not changes:
         return
-    current = _get_points(session_id)
-    update = {}
+    current = get_house_points(session_id)
     for ch in changes:
         house = ch.get("house", "").lower()
-        delta = int(ch.get("delta", 0))
+        delta = normalize_house_point_delta(int(ch.get("delta", 0)))
+        delta = cap_delta_for_spread(current, house, delta)
         if house not in HOUSES or delta == 0:
             continue
-        current[house] = max(0, current[house] + delta)
-        update[house] = current[house]
+        before = current[house]
+        current = apply_point_delta_to_scores(current, house, delta)
+        applied = current[house] - before
+        if applied == 0:
+            continue
         try:
             supabase.table("house_point_events").insert({
                 "session_id": session_id,
                 "house": house,
-                "delta": delta,
+                "delta": applied,
                 "reason": ch.get("reason", ""),
                 "source": ch.get("source", "world_event"),
             }).execute()
         except Exception as e:
             logger.error(f"[{session_id}] house_point_events insert failed: {e}")
-    if update:
-        try:
-            update["session_id"] = session_id
-            update["updated_at"] = datetime.utcnow().isoformat()
-            supabase.table("house_points").upsert(update, on_conflict="session_id").execute()
-        except Exception as e:
-            logger.error(f"_apply_changes error: {e}")
+    save_house_points(session_id, current)
 
 
 def _parse_json(text: str) -> list:
@@ -149,16 +163,21 @@ KONUŞMA:
 
 Kurallar:
 - Sadece konuşmada GERÇEKTEN geçen olayları değerlendir
-- Oyuncu iyi/cesur/akıllı davrandıysa kendi evine +puan
-- Kural ihlali, saygısızlık, ders kaçırma varsa -puan
+- Oyuncu iyi/cesur/akıllı davrandıysa kendi evine +puan (delta pozitif)
+- Kural ihlali, saygısızlık, ders kaçırma, öğretmen cezası varsa -puan (delta negatif)
+- delta pozitif = puan kazanma, delta negatif = puan kaybetme — ikisi de geçerli
 - Hiçbir olay yoksa boş liste döndür
-- KRİTİK: Eğer bir öğretmen sohbette açıkça belirli bir sayı söylediyse (örn. "yirmi puan gidiyor", "Gryffindor'dan beş puan"), o EXACT sayıyı delta olarak kullan. Azaltma yapma, yuvarlama yapma.
-- Örnekler: "yirmi puan" → delta: -20, "beş puan" → delta: -5, "on puan" → delta: 10
-- Açıkça söylenmiş bir sayı yoksa max ±15 uygula
+- KRİTİK: Öğretmen sohbette açıkça bir sayı söylediyse (örn. "yirmi puan", "beş puan"), o sayıyı kullan — yine 5 veya 10'un katı olmalı
+- Örnekler: "yirmi puan gidiyor" → delta: -20, "beş puan" → delta: -5, "on puan Gryffindor'a" → delta: 10
+- Açık sayı yoksa delta SADECE ±5, ±10 veya nadiren ±15 olabilir
+- Oran: %60 → 5 puan, %30 → 10 puan, %10 → 15 puan (15 en nadir)
+- Organik değişimlerde neredeyse hep +puan (~%93 artış); açık ceza/kural ihlali hariç − verme
+- Evler arası fark genelde ~30 civarı kalsın; tek seferde abartılı sıçrama yapma ama katı 30 kuralı yok
 - SADECE JSON döndür, başka hiçbir şey yazma
 
-Format:
+Format örnekleri:
 [{{"house": "gryffindor", "delta": 5, "reason": "Snape'e cesurca cevap verdi", "source": "conversation_event"}}]
+[{{"house": "gryffindor", "delta": -5, "reason": "Snape geç kaldığı için ceza verdi", "source": "conversation_event"}}]
 
 Değişim yoksa: []"""
 
@@ -184,7 +203,9 @@ Sınıflarda, koridorlarda, yemekhanede, Quidditch sahasında olabilir.
 
 Kurallar:
 - 1991-92 Hogwarts atmosferi (1. sınıf öğrencileri var, Harry Potter da burada)
-- Her delta max ±10 (küçük günlük değişimler)
+- Her delta ±5, ±10 veya nadiren ±15 (5 en sık, 10 orta, 15 en nadir)
+- Neredeyse hep +puan (~%93); gerçek ceza/kural ihlali dışında − verme
+- Evler arası fark genelde ~30 civarı olsun; bir evi çok öne atma ama katı sınır yok
 - Her world_events çağrısında 4 evin TÜMÜNE değin — her ev en az bir olay alsın.
 - Bazı olaylar pozitif bazıları negatif olsun. Eğer bir ev sohbette hiç geçmediyse,
 - o eve arka planda bir şey olmuştur — Hufflepuff bahçe dersinde başarılı oldu,
@@ -195,8 +216,8 @@ Format (4 evin TÜMÜ dahil olmalı, eksik ev kabul edilmez):
 [
   {{"house": "slytherin", "delta": 10, "reason": "Draco iksir dersinde başarılı oldu", "source": "world_event"}},
   {{"house": "hufflepuff", "delta": 5, "reason": "Hufflepuff bahçe dersinde övgü aldı", "source": "world_event"}},
-  {{"house": "ravenclaw", "delta": -3, "reason": "Ravenclaw öğrencisi yasaklı kitap okurken yakalandı", "source": "world_event"}},
-  {{"house": "gryffindor", "delta": -2, "reason": "Fred ve George yemek salonunda şaka yaptı", "source": "world_event"}}
+  {{"house": "ravenclaw", "delta": -5, "reason": "Ravenclaw öğrencisi yasaklı kitap okurken yakalandı", "source": "world_event"}},
+  {{"house": "gryffindor", "delta": -10, "reason": "Fred ve George yemek salonunda şaka yaptı", "source": "world_event"}}
 ]"""
 
     text = await _call_vertex(prompt, max_tokens=250, temperature=0.85)
@@ -212,7 +233,7 @@ async def maybe_generate_surprise_event(session_id: str, week: int, day: int) ->
     Abartılı değil — günlük Hogwarts yaşamından küçük detaylar.
     %15 ihtimalle tetiklenir.
     """
-    if random.random() > 0.15:
+    if random.random() > 0.22:
         return None
 
     day_names = {1: "Pazartesi", 2: "Salı", 3: "Çarşamba", 4: "Perşembe",
@@ -426,11 +447,40 @@ def _get_all_active_sessions() -> list[str]:
         return []
 
 
+def _organic_drift_change(
+    current: dict,
+    house: str,
+    max_points: int,
+    min_points: int,
+    spread: int,
+    forced_direction: int | None = None,
+) -> dict | None:
+    direction = forced_direction if forced_direction in (-1, 1) else pick_organic_drift_direction(current, house)
+    delta = random_house_point_delta(direction, organic=True)
+    if delta < 0 and forced_direction != -1:
+        delta = abs(delta)
+
+    delta = cap_delta_for_spread(current, house, delta)
+    if delta == 0:
+        return None
+
+    return {
+        "house": house,
+        "delta": delta,
+        "reason": "Hogwarts'ta günlük organik değişim",
+        "source": "organic_drift",
+    }
+
+
+def _apply_drift_change(current: dict, change: dict) -> dict:
+    house = change["house"]
+    return apply_point_delta_to_scores(current, house, change["delta"])
+
+
 def _apply_organic_drift():
     """
-    Her 30 saniyede bir çalışır.
-    Tüm aktif sessionlara tamamen random küçük puan değişimi uygular.
-    AI yok — sadece random sayılar.
+    Aktif oturumlara periyodik küçük puan değişimi uygular.
+    Fark açılınca rubber-band ile lider geri çekilir, geridekiler yaklaşır.
     """
     sessions = _get_all_active_sessions()
     if not sessions:
@@ -438,41 +488,60 @@ def _apply_organic_drift():
 
     for session_id in sessions:
         try:
-            current = _get_points(session_id)
+            current = get_house_points(session_id)
 
             max_points = max(current.values()) if current.values() else 0
             min_points = min(current.values()) if current.values() else 0
             spread = max_points - min_points
 
             changes = []
+
+            if spread >= RUBBER_BAND_SPREAD and random.random() < 0.25:
+                for house, direction in rubber_band_drift_pairs(current):
+                    if any(c["house"] == house for c in changes):
+                        continue
+                    change = _organic_drift_change(
+                        current, house, max_points, min_points, spread, forced_direction=direction,
+                    )
+                    if change:
+                        changes.append(change)
+                        current = _apply_drift_change(current, change)
+                        max_points = max(current.values())
+                        min_points = min(current.values())
+                        spread = max_points - min_points
+
             for house in HOUSES:
-                if random.random() > 0.6:
+                if random.random() > ORGANIC_DRIFT_HOUSE_CHANCE:
                     continue
+                if any(c["house"] == house for c in changes):
+                    continue
+                change = _organic_drift_change(current, house, max_points, min_points, spread)
+                if change:
+                    changes.append(change)
+                    current = _apply_drift_change(current, change)
+                    max_points = max(current.values())
+                    min_points = min(current.values())
+                    spread = max_points - min_points
 
-                magnitude = random.choice([2, 3, 4, 5])
-                direction = random.choice([-1, 1])
+            if len(changes) < ORGANIC_DRIFT_MIN_CHANGES:
+                remaining = [h for h in HOUSES if not any(c["house"] == h for c in changes)]
+                random.shuffle(remaining)
+                for house in remaining:
+                    if len(changes) >= ORGANIC_DRIFT_MIN_CHANGES:
+                        break
+                    change = _organic_drift_change(current, house, max_points, min_points, spread)
+                    if change:
+                        changes.append(change)
+                        current = _apply_drift_change(current, change)
+                        max_points = max(current.values())
+                        min_points = min(current.values())
+                        spread = max_points - min_points
 
-                if spread > 40:
-                    house_pts = current.get(house, 0)
-                    if house_pts == max_points and direction == 1:
-                        direction = -1
-                    if house_pts == min_points and direction == -1:
-                        direction = 1
-                    magnitude = random.choice([2, 3])
-
-                delta = magnitude * direction
-                if current.get(house, 0) + delta < 0:
-                    delta = abs(delta)
-
-                changes.append({
-                    "house": house,
-                    "delta": delta,
-                    "reason": "Hogwarts'ta günlük organik değişim",
-                    "source": "organic_drift",
-                })
             if changes:
                 _apply_changes(session_id, changes)
                 logger.debug(f"[{session_id}] Organic drift: {[(c['house'], c['delta']) for c in changes]}")
+            else:
+                save_house_points(session_id, current)
         except Exception as e:
             logger.error(f"Organic drift error for {session_id}: {e}")
 
@@ -480,7 +549,7 @@ def _apply_organic_drift():
 def start_organic_scheduler():
     """
     FastAPI startup'ta bir kez çağrılır.
-    Her 30 saniyede _apply_organic_drift çalıştırır.
+    ORGANIC_DRIFT_INTERVAL_SECONDS aralığında _apply_organic_drift çalıştırır.
     """
     global _scheduler_started
     with _scheduler_lock:
@@ -490,9 +559,11 @@ def start_organic_scheduler():
 
     def scheduler_loop():
         import time
-        logger.info("Organic drift scheduler started — running every 30s")
+        logger.info(
+            f"Organic drift scheduler started — running every {ORGANIC_DRIFT_INTERVAL_SECONDS}s"
+        )
         while True:
-            time.sleep(30)
+            time.sleep(ORGANIC_DRIFT_INTERVAL_SECONDS)
             try:
                 _apply_organic_drift()
             except Exception as e:
@@ -503,6 +574,45 @@ def start_organic_scheduler():
     logger.info("Organic drift scheduler thread launched")
 
 
+def _dormitory_for_house(house: str) -> str:
+    house = (house or "gryffindor").lower()
+    if house == "slytherin":
+        return "slytherin_dormitory"
+    if house == "ravenclaw":
+        return "ravenclaw_common_room"
+    if house == "hufflepuff":
+        return "hufflepuff_common_room"
+    return "gryffindor_dormitory"
+
+
+def _extract_location_from_narrative(text: str, player_house: str = "gryffindor") -> str | None:
+    if not text:
+        return None
+
+    rules = [
+        (re.compile(r"yatakhane|yatakhaneye|yatağa|yataga|koğuş|kogus|koğuşuna|kogusuna|dormitory", re.I), lambda: _dormitory_for_house(player_house)),
+        (re.compile(r"büyük salon|buyuk salon|great hall|yemek salonu", re.I), lambda: "great_hall"),
+        (re.compile(r"kütüphane|kutuphane|library", re.I), lambda: "library"),
+        (re.compile(r"iksir sınıf|iksir sinif|potions", re.I), lambda: "potions_classroom"),
+        (re.compile(r"zindan|dungeon", re.I), lambda: "dungeons"),
+        (re.compile(r"quidditch|saha", re.I), lambda: "quidditch_field"),
+        (re.compile(r"koridor|corridor|merdiven", re.I), lambda: "corridor"),
+        (re.compile(r"baykuş|owlery", re.I), lambda: "owlery"),
+        (re.compile(r"hastane kanad|hospital wing", re.I), lambda: "hospital_wing"),
+        (re.compile(r"yasak orman|forbidden forest", re.I), lambda: "forbidden_forest"),
+        (re.compile(r"hogsmeade", re.I), lambda: "hogsmeade"),
+        (re.compile(r"sera|greenhouse|herbology|bitkibilim", re.I), lambda: "herbology_greenhouse"),
+        (re.compile(r"savunma sınıf|defense classroom|dada", re.I), lambda: "defense_classroom"),
+    ]
+
+    chunks = [text] + list(reversed(re.split(r"\n\n+", text)))
+    for chunk in chunks:
+        for pattern, resolver in rules:
+            if pattern.search(chunk):
+                return resolver() if callable(resolver) else resolver
+    return None
+
+
 async def extract_inventory_and_location(session_id: str, ai_response: str):
     """
     AI yanıtındaki [LOCATION:], [ITEM+:], [ITEM-:] tag'lerini parse et.
@@ -510,13 +620,19 @@ async def extract_inventory_and_location(session_id: str, ai_response: str):
     if not ai_response:
         return
 
-    from services.house_points_service import add_inventory_item, remove_inventory_item, update_location
+    from services.house_points_service import add_inventory_item, remove_inventory_item, update_location, get_game_state
 
-    # Konum
+    # Konum — önce tag, sonra anlatı metni
     location_match = re.search(r'\[LOCATION:\s*([^\]]+)\]', ai_response, re.IGNORECASE)
     if location_match:
         location = location_match.group(1).strip().lower().replace(" ", "_")
         update_location(session_id, location)
+    else:
+        state = get_game_state(session_id)
+        player_house = state.get("player_house", "gryffindor")
+        narrative_loc = _extract_location_from_narrative(ai_response, player_house)
+        if narrative_loc:
+            update_location(session_id, narrative_loc)
 
     # Envantere ekle
     for match in re.finditer(r'\[ITEM\+:\s*([^\]]+)\]', ai_response, re.IGNORECASE):

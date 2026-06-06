@@ -316,6 +316,14 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 - When the player wakes up in the morning, the narrator MUST mention today's schedule: which classes are happening, at what time, and any warnings (e.g. "Snape'in dersine geç kalma"). This is mandatory for morning scenes.
 - When a scene transition happens (going to sleep, waking up, moving between locations), briefly orient the player: what time is it, what's next.
 - If the player is about to miss a class or event, a character or narrator should naturally warn them.
+
+### DERS PROGRAMI — KESİN KURAL (İHLAL ETME):
+- OYUN ZAMANI bloğundaki resmi program TEK GERÇEK kaynaktır. Kendi ders, saat veya gün icat etme.
+- Şu an ders saati ise oyuncu o derste olmalı; sahne o dersin sınıfında geçmeli ve [LOCATION:] o dersin mekanı olmalı.
+- Ders dışı saatlerde serbest zaman olabilir ama yine resmi saat çizelgesine uy.
+- [TIME:] tag'i resmi oyun saatiyle uyumlu olmalı; rastgele saat atlama yasak (uyku/konum geçişi hariç).
+- Oyuncuya bugünkü programı anlatırken SADECE OYUN ZAMANI bloğundaki dersleri say — ekstra ders ekleme.
+- Mekan değişince MUTLAKA [LOCATION: ...] yaz; geçerli adlar prompt'taki listeden olmalı.
 """
     system_content += narrative_context
     proactive_instruction = """
@@ -330,11 +338,13 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 - Atmosfer aktif olmalı — Hogwarts bir arka fon değil, canlı bir varlık. Koridorlar gıcırdar, portreler fısıldar, merdiven döner, şömine çatırdar. Bunları sahneye sor.
 
 ## SAHNE YÖNETİMİ:
-- Basit konuşma = kısa yanıt. Oyuncu Hermione ile kitap tartışıyorsa 2-3 kısa blok yeter, 6 karakter sahneye girmesin.
+- Normal konuşma = dengeli yanıt: 3-5 blok tipik. [NARRATOR] atmosfer + ana karakter(ler) + gerekirse 1 arka plan NPC.
+- Oyuncu Hermione ile kitap tartışıyorsa 3-4 blok yeter — ama tamamen boş kalmasın; kısa bir anlatı veya çevre sesi ekle.
+- Kalabalık mekanlarda (Büyük Salon, koridor) ara sıra bağımsız NPC diyalogları kur: iki öğrenci yan yana fısıldaşır, bir portre yorum yapar — oyuncuya doğrudan hitap etmeden dünya canlı kalsın.
 - Oyuncu hareketsizse dünya hareket eder — ama sessizce, zorla değil. Uzaktan bir ses, geçen bir öğrenci, değişen ışık.
 - Dramatik sahne = tempo yavaşlar. Tehlike anında cümleler kısalır, detaylar keskinleşir.
 - Sahneyi oyuncuya açık bırak — "Ne yaparsın?" diye sorma, ama kapıyı göster.
-- Oyuncu bir karakterle baş başaysa SADECE o karakter yanıt verir. Başka kimse girmez.
+- Oyuncu bir karakterle baş başaysa O karakter ana yanıt verir; kalabalık sahnede 1-2 ek karakter araya girebilir.
 
 ## KARAKTER TUTARLILIĞI:
 - Karakterler oyuncuyu hatırlar — dün yaşanan bir şeye bugün atıfta bulunabilirler.
@@ -348,8 +358,8 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 - Harry'nin hikayesi arka planda akar. Oyuncu dahil olmak zorunda değil ama duyurular, koridordaki fısıltılar, öğretmenlerin endişeli yüzleri bu hikayeyi hissettirir.
 
 ## YANIT FORMATI — KURAL:
-- Kısa sahne: 2-4 blok
-- Orta sahne: 4-7 blok  
+- Kısa sahne: 3-4 blok
+- Orta sahne: 4-6 blok  
 - Büyük dramatik sahne: 7-10 blok maksimum
 - Asla "Ne yapmak istersin?" ile bitirme
 - Her yanıtın sonunda [TIME:] tag'i zorunlu
@@ -393,10 +403,16 @@ Every response MUST use these tags. No exceptions.
 [BLAISE] Use for Blaise Zabini's dialogue and reactions.
 [CHARACTER:Name] Use this for any other character not listed above.
 
-[LOCATION: konum_adı] — Kemal bir mekandan diğerine geçtiğinde MUTLAKA yaz. Geçerli konum adları (sadece bunları kullan):
+[LOCATION: konum_adı] — HER yanıtta zorunlu ama OYUNCUYA GÖRÜNMEZ (sistem metadata). Yanıtın EN SONUNDA tek satır olarak yaz; diyalog/anlatı metninin içine karıştırma. Geçerli konum adları (sadece bunları kullan):
 gryffindor_tower, great_hall, library, dungeons, quidditch_field, corridor, classroom, owlery, hospital_wing, forbidden_forest, hogsmeade, astronomy_tower, potions_classroom, transfiguration_classroom, charms_classroom, herbology_greenhouse, defense_classroom, great_lake, slytherin_common_room, hufflepuff_common_room, ravenclaw_common_room, gryffindor_dormitory, slytherin_dormitory, room_of_requirement
-Örnek: Kemal yemek salonuna gittiğinde → [LOCATION: great_hall], kütüphaneye gittiğinde → [LOCATION: library]
-Her konuşmada Kemal neredeyse mevcut konumu yaz — değişmese bile ilk mesajda belirt.
+Örnekler:
+- Büyük Salon → [LOCATION: great_hall]
+- Kütüphane → [LOCATION: library]
+- Gryffindor yatakhane/koğuş → [LOCATION: gryffindor_dormitory]
+- Slytherin yatakhane → [LOCATION: slytherin_dormitory]
+- Ravenclaw ortak salon → [LOCATION: ravenclaw_common_room]
+- Hufflepuff ortak salon → [LOCATION: hufflepuff_common_room]
+Yatakhane, koğuş, ortak salon gibi Türkçe anlatımlarda da doğru İngilizce konum anahtarını kullan.
 [ITEM+: eşya_adı | tür | açıklama] — Kemal bir eşya edindiğinde kullan. Örnek: [ITEM+: Gizem Haritası | map | Hogwarts'ın tüm koridorlarını gösterir]
 [ITEM-: eşya_adı] — Kemal bir eşyayı kaybettiğinde veya verdiğinde kullan.
 Bu tag'ler yanıtın herhangi bir yerinde olabilir, [TIME:] gibi zorunlu değil — sadece gerçekten değişim olduğunda kullan.

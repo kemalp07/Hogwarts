@@ -106,6 +106,7 @@ CREATE TABLE game_state (
   current_hour INTEGER DEFAULT 8,  -- 0-23
   daily_message_count INTEGER DEFAULT 0,
   last_activity_at TIMESTAMP DEFAULT NOW(),
+  points_floor_started_at TIMESTAMP DEFAULT NOW(),
   player_house TEXT DEFAULT 'gryffindor' CHECK (player_house IN ('gryffindor', 'hufflepuff', 'ravenclaw', 'slytherin')),
   updated_at TIMESTAMP DEFAULT NOW()
 );

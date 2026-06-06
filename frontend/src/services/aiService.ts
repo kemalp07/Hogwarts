@@ -22,7 +22,49 @@ type ChatApiResponse = {
 };
 
 // Use the test endpoint in local dev when Vertex credentials may be missing.
-const API_URL = 'https://hogwarts-2.onrender.com/api/chat';
+const API_BASE = 'https://hogwarts-2.onrender.com/api';
+const API_URL = `${API_BASE}/chat`;
+
+export async function deleteMessage(
+  sessionId: string,
+  content: string,
+  role: 'user' | 'assistant',
+): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/delete-message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, content, role }),
+    });
+  } catch {
+    // Best-effort server sync.
+  }
+}
+
+export async function updateMessage(
+  sessionId: string,
+  oldContent: string,
+  newContent: string,
+  role: 'user' | 'assistant',
+): Promise<void> {
+  const trimmed = newContent.trim();
+  if (!trimmed || trimmed === oldContent) return;
+
+  try {
+    await fetch(`${API_BASE}/edit-message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionId,
+        old_content: oldContent,
+        new_content: trimmed,
+        role,
+      }),
+    });
+  } catch {
+    // Best-effort server sync.
+  }
+}
 
 export async function sendMessage(
   messages: Message[],

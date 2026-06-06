@@ -12,16 +12,269 @@ import random
 import logging
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Dict, Optional, Tuple
 
 from db.supabase_client import supabase
 
 logger = logging.getLogger(__name__)
 
 HOUSES = ["gryffindor", "hufflepuff", "ravenclaw", "slytherin"]
+TARGET_HOUSE_POINT_SPREAD = 30   # yumuşak hedef — organik denge buna doğru çeker
+HARD_HOUSE_POINT_SPREAD = 50     # sert üst sınır — ancak aşırı uçta devreye girer
+MAX_HOUSE_POINT_SPREAD = TARGET_HOUSE_POINT_SPREAD  # geriye uyumluluk
+MIN_POINTS_FLOOR_BASE = 5
+POINTS_FLOOR_INTERVAL_MINUTES = 3
+POINTS_FLOOR_STEP = 5
+POINT_INCREASE_CHANCE = 0.93  # organik: %93 artış, %7 azalış
+ORGANIC_DRIFT_INTERVAL_SECONDS = 5
+ORGANIC_DRIFT_HOUSE_CHANCE = 0.85
+ORGANIC_DRIFT_MIN_CHANGES = 1
+SPREAD_BALANCE_THRESHOLD = 40
+RUBBER_BAND_SPREAD = 40
+ROUTINE_POINT_MAGNITUDES = [5, 10, 15]
+ROUTINE_POINT_WEIGHTS = [60, 30, 10]  # 5 en sık, 10 orta, 15 en nadir
 CALENDAR_PATH = Path(__file__).resolve().parents[2] / "backend" / "data" / "school_calendar.json"
 
 _CALENDAR_CACHE = None
+
+
+def random_point_sign(direction: Optional[int] = None) -> int:
+    """Yön seç: zorunlu değilse %80 artış, %20 azalış."""
+    if direction in (-1, 1):
+        return direction
+    return 1 if random.random() < POINT_INCREASE_CHANCE else -1
+
+
+def random_house_point_delta(direction: Optional[int] = None, organic: bool = False) -> int:
+    """Ağırlıklı rastgele puan. organic=True iken neredeyse hiç eksi vermez."""
+    sign = random_point_sign(direction)
+    if organic and sign < 0 and direction not in (-1,):
+        sign = 1
+    magnitude = random.choices(ROUTINE_POINT_MAGNITUDES, weights=ROUTINE_POINT_WEIGHTS, k=1)[0]
+    return sign * magnitude
+
+
+def normalize_house_point_delta(delta: int) -> int:
+    """Rutin puanlar 5 / 10 / 15; öğretmenin açık söylediği büyük miktarlar 20 / 50."""
+    if delta == 0:
+        return 0
+    sign = 1 if delta > 0 else -1
+    magnitude = abs(int(delta))
+    if magnitude >= 45:
+        snapped = 50
+    elif magnitude >= 18:
+        snapped = 20
+    elif magnitude >= 13:
+        snapped = 15
+    elif magnitude >= 8:
+        snapped = 10
+    else:
+        snapped = 5
+    return sign * snapped
+
+
+def _spread_cap_magnitudes(delta: int) -> list[int]:
+    magnitude = abs(int(delta))
+    if magnitude >= 45:
+        return [50, 15, 10, 5]
+    if magnitude >= 18:
+        return [20, 15, 10, 5]
+    return [m for m in reversed(ROUTINE_POINT_MAGNITUDES) if m <= magnitude] or [5]
+
+
+def snap_points_to_fives(points: dict) -> dict:
+    return {h: int(round(int(points.get(h, 0)) / 5) * 5) for h in HOUSES}
+
+
+def _parse_datetime(value) -> datetime:
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None)
+    if isinstance(value, str):
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
+    return datetime.utcnow()
+
+
+def ensure_points_floor_started_at(session_id: str) -> datetime:
+    """Oturum için taban sayacının başlangıç anını döner (yoksa şimdi kaydeder)."""
+    state = get_game_state(session_id)
+    raw = state.get("points_floor_started_at")
+    if raw:
+        return _parse_datetime(raw)
+
+    now = datetime.utcnow()
+    if supabase:
+        try:
+            supabase.table("game_state").upsert({
+                "session_id": session_id,
+                "points_floor_started_at": now.isoformat(),
+                "updated_at": now.isoformat(),
+            }, on_conflict="session_id").execute()
+        except Exception as e:
+            logger.warning(f"ensure_points_floor_started_at: {e}")
+    return now
+
+
+def compute_minimum_points_floor(started_at: datetime, now: Optional[datetime] = None) -> int:
+    """
+    Her 5 dakikada taban +5.
+    t=0 → 5, t=15dk → 20, t=30dk → 35
+    """
+    now = now or datetime.utcnow()
+    elapsed_minutes = max(0.0, (now - started_at).total_seconds() / 60)
+    intervals = int(elapsed_minutes // POINTS_FLOOR_INTERVAL_MINUTES)
+    return MIN_POINTS_FLOOR_BASE + intervals * POINTS_FLOOR_STEP
+
+
+def apply_minimum_points_floor(points: dict, floor: int) -> dict:
+    """Yalnızca en düşük ev(ler)i tabana yükselt — hepsini aynı seviyeye çekme."""
+    adjusted = snap_points_to_fives(points)
+    floor = snap_points_to_fives({h: floor for h in HOUSES})["gryffindor"]
+    current_min = min(adjusted[h] for h in HOUSES)
+    if current_min >= floor:
+        return adjusted
+    for house in HOUSES:
+        if adjusted[house] == current_min:
+            adjusted[house] = floor
+    return adjusted
+
+
+def get_points_floor_info(session_id: str) -> dict:
+    started_at = ensure_points_floor_started_at(session_id)
+    floor = compute_minimum_points_floor(started_at)
+    return {
+        "minimum_floor": floor,
+        "points_floor_started_at": started_at.isoformat() + "Z",
+    }
+
+
+def normalize_session_house_points(session_id: str, points: dict) -> dict:
+    """5'in katı + zaman tabanı; sert dengeleme yalnızca aşırı farkta."""
+    started_at = ensure_points_floor_started_at(session_id)
+    floor = compute_minimum_points_floor(started_at)
+    with_floor = apply_minimum_points_floor(points, floor)
+    if house_points_spread(with_floor) > HARD_HOUSE_POINT_SPREAD:
+        return rebalance_points_spread(with_floor, HARD_HOUSE_POINT_SPREAD)
+    return snap_points_to_fives(with_floor)
+
+
+def _houses_at_extreme(points: dict, extreme: str) -> list:
+    values = {h: int(points.get(h, 0)) for h in HOUSES}
+    target = max(values.values()) if extreme == "max" else min(values.values())
+    return [h for h in HOUSES if values[h] == target]
+
+
+def pick_organic_drift_direction(points: dict, house: str) -> Optional[int]:
+    """Organik drift: neredeyse hep +; nadiren lider hafif geriler."""
+    values = {h: int(points.get(h, 0)) for h in HOUSES}
+    spread = max(values.values()) - min(values.values())
+    house_pts = values[house]
+    max_pts = max(values.values())
+
+    if spread >= TARGET_HOUSE_POINT_SPREAD and house_pts >= max_pts:
+        return -1 if random.random() < 0.08 else None
+
+    return None
+
+
+def rubber_band_drift_pairs(points: dict) -> list:
+    """Fark çok açıldıysa yalnızca geridekine + ver; lidere zorla - verme."""
+    spread = house_points_spread(points)
+    if spread < RUBBER_BAND_SPREAD:
+        return []
+
+    laggers = _houses_at_extreme(points, "min")
+    if laggers and random.random() < 0.45:
+        return [(random.choice(laggers), 1)]
+    return []
+
+
+def house_points_spread(points: dict) -> int:
+    values = [int(points.get(h, 0)) for h in HOUSES]
+    if not values:
+        return 0
+    return max(values) - min(values)
+
+
+def apply_point_delta_to_scores(current: dict, house: str, delta: int) -> dict:
+    """Puana delta uygula; sert dengeleme yalnızca aşırı farkta."""
+    updated = snap_points_to_fives({**current, house: max(0, current[house] + delta)})
+    if house_points_spread(updated) > HARD_HOUSE_POINT_SPREAD:
+        return rebalance_points_spread(updated, HARD_HOUSE_POINT_SPREAD)
+    return updated
+
+
+def rebalance_points_spread(points: dict, max_spread: int = HARD_HOUSE_POINT_SPREAD) -> dict:
+    """Evler arası fark max_spread'i aşarsa liderden 5 düşür veya geriden olana 5 ekle."""
+    balanced = snap_points_to_fives(points)
+    guard = 0
+    while house_points_spread(balanced) > max_spread and guard < 20:
+        guard += 1
+        leader = max(HOUSES, key=lambda h: balanced[h])
+        lagger = min(HOUSES, key=lambda h: balanced[h])
+        if balanced[leader] >= 5:
+            balanced[leader] -= 5
+        else:
+            balanced[lagger] += 5
+    return balanced
+
+
+def _leader_and_lagger(points: dict) -> Tuple[str, str, Dict[str, int]]:
+    values = {h: int(points.get(h, 0)) for h in HOUSES}
+    leader = max(HOUSES, key=lambda h: values[h])
+    lagger = min(HOUSES, key=lambda h: values[h])
+    return leader, lagger, values
+
+
+def save_house_points(session_id: str, points: dict) -> dict:
+    """Puanları 5'in katına yuvarla, zaman tabanı + fark limitini uygula ve kaydet."""
+    if not supabase:
+        return normalize_session_house_points(session_id, points)
+    balanced = normalize_session_house_points(session_id, points)
+    try:
+        supabase.table("house_points").upsert({
+            "session_id": session_id,
+            **{h: balanced[h] for h in HOUSES},
+            "updated_at": datetime.utcnow().isoformat(),
+        }, on_conflict="session_id").execute()
+    except Exception as e:
+        logger.error(f"save_house_points error: {e}")
+    return balanced
+
+
+def cap_delta_for_spread(
+    current: dict,
+    house: str,
+    delta: int,
+    max_spread: int = HARD_HOUSE_POINT_SPREAD,
+) -> int:
+    """Sert üst sınırı aşmayacak şekilde deltayı kırp; ~30 hedefi zorunlu değil."""
+    delta = normalize_house_point_delta(delta)
+    if delta == 0 or house not in HOUSES:
+        return 0
+
+    current = snap_points_to_fives({h: int(current.get(h, 0)) for h in HOUSES})
+    spread = house_points_spread(current)
+    leader, lagger, values = _leader_and_lagger(current)
+
+    sign = 1 if delta > 0 else -1
+    for magnitude in _spread_cap_magnitudes(delta):
+        trial_delta = sign * magnitude
+        trial = {h: current[h] for h in HOUSES}
+        trial[house] = max(0, trial[house] + trial_delta)
+        new_spread = house_points_spread(trial)
+        if new_spread > max_spread:
+            continue
+        # Hedef (~30) üstü: liderin farkı açması zorlaşır ama yasak değil
+        if (
+            spread >= TARGET_HOUSE_POINT_SPREAD
+            and new_spread > spread
+            and trial_delta > 0
+            and values[house] >= values[leader]
+            and random.random() > 0.45
+        ):
+            continue
+        return trial_delta
+    return 0
 
 
 def _load_calendar() -> dict:
@@ -40,7 +293,12 @@ def get_house_points(session_id: str) -> dict:
     try:
         resp = supabase.table("house_points").select("*").eq("session_id", session_id).execute()
         data = (resp.data or [{}])[0]
-        return {h: int(data.get(h, 0)) for h in HOUSES}
+        raw = {h: int(data.get(h, 0)) for h in HOUSES}
+        snapped = snap_points_to_fives(raw)
+        balanced = normalize_session_house_points(session_id, snapped)
+        if balanced != snapped:
+            return save_house_points(session_id, balanced)
+        return balanced
     except Exception as e:
         logger.error(f"get_house_points error: {e}")
         return {h: 0 for h in HOUSES}
@@ -68,6 +326,7 @@ def get_game_state(session_id: str) -> dict:
             "current_hour": 20,
             "player_house": "gryffindor",
             "daily_message_count": 0,
+            "points_floor_started_at": datetime.utcnow().isoformat(),
         }
         supabase.table("game_state").insert(default).execute()
         return default
@@ -88,22 +347,29 @@ def _apply_delta(session_id: str, house: str, delta: int, reason: str, source: s
     """INTERNAL. Direct delta application. Never call from user-facing endpoints."""
     if not supabase:
         return
+    delta = normalize_house_point_delta(delta)
+    if delta == 0:
+        return
     try:
         current = get_house_points(session_id)
-        new_val = max(0, current[house] + delta)  # puan 0'ın altına düşmez
-        supabase.table("house_points").upsert({
-            "session_id": session_id,
-            house: new_val,
-            "updated_at": datetime.utcnow().isoformat()
-        }, on_conflict="session_id").execute()
+        delta = cap_delta_for_spread(current, house, delta)
+        if delta == 0:
+            return
+        updated = apply_point_delta_to_scores(current, house, delta)
+        save_house_points(session_id, updated)
+        applied_delta = updated[house] - current[house]
+        if applied_delta == 0:
+            return
         supabase.table("house_point_events").insert({
             "session_id": session_id,
             "house": house,
-            "delta": delta,
+            "delta": applied_delta,
             "reason": reason,
             "source": source
         }).execute()
-        logger.info(f"[{session_id}] {house} {'+' if delta>0 else ''}{delta} ({source}): {reason}")
+        logger.info(
+            f"[{session_id}] {house} {'+' if applied_delta > 0 else ''}{applied_delta} ({source}): {reason}"
+        )
     except Exception as e:
         logger.error(f"_apply_delta error: {e}")
 
@@ -112,7 +378,9 @@ def _apply_delta(session_id: str, house: str, delta: int, reason: str, source: s
 
 def apply_player_action(session_id: str, player_house: str, delta: int, reason: str):
     """Oyuncunun davranışından gelen puan değişimi. Max ±20 per action."""
-    clamped = max(-20, min(20, delta))
+    clamped = normalize_house_point_delta(max(-20, min(20, delta)))
+    if clamped == 0:
+        return
     _apply_delta(session_id, player_house, clamped, reason, "player_action")
 
 
@@ -125,11 +393,10 @@ def apply_missed_class(session_id: str, player_house: str, subject: str, penalty
 def apply_micro_drift(session_id: str, player_house: str):
     """Gün geçişinde diğer evlere sessiz micro-drift uygula."""
     cal = _load_calendar()
-    drift_range = cal.get("micro_drift", {}).get("range_per_day", [-3, 3])
     for house in HOUSES:
         if house == player_house:
             continue  # oyuncunun evi bu fonksiyonda etkilenmez
-        delta = random.randint(drift_range[0], drift_range[1])
+        delta = random_house_point_delta()
         if delta != 0:
             _apply_delta(session_id, house, delta, "Günlük doğal değişim", "natural_drift")
 

@@ -11,6 +11,7 @@ from services.memory_service import generate_summary, get_memories, maybe_summar
 from services.vertex_ai import stream_vertex_ai
 from services.house_points_service import (
     get_house_points,
+    get_points_floor_info,
     get_game_state,
     check_inactivity_advance,
     build_narrator_day_message,
@@ -23,6 +24,7 @@ from services.house_points_service import (
     get_todays_schedule,
     get_missed_classes_for_prompt,
     build_missed_class_context,
+    get_location,
 )
 from services.world_simulation import run_point_simulation, extract_time_from_response, extract_inventory_and_location
 from services.relationship_service import analyze_relationship_changes, build_relationship_context
@@ -251,7 +253,9 @@ async def chat_endpoint(request: Request):
                 "week": game_state.get("current_week", 1),
                 "day": game_state.get("current_day", 1),
                 "player_house": game_state.get("player_house", "gryffindor"),
+                "current_hour": game_state.get("current_hour", 8),
             },
+            "location": get_location(session_id),
             "narrator_injection": narrator_injection,
         })
         yield f"data: {meta}\n\n"
@@ -307,6 +311,7 @@ async def chat_endpoint(request: Request):
             "type": "done",
             "character_name": char_name,
             "house_points": _final_points,
+            "location": get_location(session_id),
             "simulation_params": {
                 "session_id": session_id,
                 "player_house": game_state.get("player_house", "gryffindor"),
@@ -392,6 +397,7 @@ async def run_simulation_endpoint(request: Request):
         logger.error(f"Relationship analysis error: {e}")
 
     points = get_house_points(session_id)
+    state = get_game_state(session_id)
     missed_classes = sim_result.get("missed") or []
     missed_text = ""
     if missed_classes:
@@ -401,6 +407,13 @@ async def run_simulation_endpoint(request: Request):
     return JSONResponse(content={
         "status": "ok",
         "house_points": points,
+        "location": get_location(session_id),
+        "game_state": {
+            "week": state.get("current_week", 1),
+            "day": state.get("current_day", 1),
+            "player_house": state.get("player_house", "gryffindor"),
+            "current_hour": state.get("current_hour", 8),
+        },
         "surprise_event": sim_result.get("surprise"),
         "missed_classes": missed_text,
     })
@@ -418,6 +431,28 @@ async def delete_message_endpoint(request: Request):
 
     if supabase:
         supabase.table("messages").delete().eq("session_id", session_id).eq("content", content).eq("role", role).execute()
+
+    return {"status": "ok"}
+
+
+@router.post("/edit-message")
+async def edit_message_endpoint(request: Request):
+    body = await request.json()
+    session_id = body.get("session_id", "")
+    old_content = body.get("old_content", "")
+    new_content = body.get("new_content", "")
+    role = body.get("role", "user")
+
+    if not session_id or not old_content or not new_content:
+        raise HTTPException(status_code=400, detail="session_id, old_content ve new_content gerekli")
+
+    if old_content == new_content:
+        return {"status": "ok"}
+
+    if supabase:
+        supabase.table("messages").update({"content": new_content}).eq(
+            "session_id", session_id
+        ).eq("content", old_content).eq("role", role).execute()
 
     return {"status": "ok"}
 
@@ -470,6 +505,7 @@ async def schedule_endpoint(session_id: str = Query(..., min_length=1)):
                 "time": cls["time"],
                 "subject": cls["subject"],
                 "teacher": cls.get("teacher", ""),
+                "location": cls.get("location", ""),
                 "status": status,
                 "penalty": abs(cls["house_penalty"]["delta"]) if cls.get("house_penalty") else 0,
             })
@@ -492,8 +528,11 @@ async def house_points_endpoint(session_id: str = Query(..., min_length=1)):
     """Anlık ev puanlarını döner. Frontend polling için."""
     points = get_house_points(session_id)
     state = get_game_state(session_id)
+    floor_info = get_points_floor_info(session_id)
     return JSONResponse(content={
         "points": points,
+        "minimum_floor": floor_info["minimum_floor"],
+        "points_floor_started_at": floor_info["points_floor_started_at"],
         "game_state": {
             "week": state.get("current_week", 1),
             "day": state.get("current_day", 1),
