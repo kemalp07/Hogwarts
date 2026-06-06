@@ -75,7 +75,7 @@ export function mapDbCharacterToCharacter(row: Record<string, unknown>): Charact
 
 export async function saveCharacterToDB(character: Character, sessionId: string) {
   try {
-    await fetch('http://localhost:8001/api/save-character', {
+    await fetch('https://hogwarts-2.onrender.com/api/save-character', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ session_id: sessionId, character }),
@@ -89,7 +89,7 @@ export async function saveCharacterToDB(character: Character, sessionId: string)
 export async function loadCharactersFromDB(sessionId: string): Promise<Character[]> {
   try {
     const res = await fetch(
-      `http://localhost:8001/api/load-characters?session_id=${encodeURIComponent(sessionId)}`,
+      `https://hogwarts-2.onrender.com/api/load-characters?session_id=${encodeURIComponent(sessionId)}`,
     );
     if (!res.ok) return [];
     const data = await res.json();

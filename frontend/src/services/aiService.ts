@@ -22,7 +22,7 @@ type ChatApiResponse = {
 };
 
 // Use the test endpoint in local dev when Vertex credentials may be missing.
-const API_URL = 'http://localhost:8001/api/chat';
+const API_URL = 'https://hogwarts-2.onrender.com/api/chat';
 
 export async function sendMessage(
   messages: Message[],
@@ -138,7 +138,7 @@ export async function sendMessage(
     if (simulationParams) {
       const sp = simulationParams;
       try {
-        const simRes = await fetch('http://localhost:8001/api/run-simulation', {
+        const simRes = await fetch('https://hogwarts-2.onrender.com/api/run-simulation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

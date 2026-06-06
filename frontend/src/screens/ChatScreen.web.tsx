@@ -236,7 +236,7 @@ async function deleteMessageItem(
   setMessages((prev) => prev.filter((m) => m.id !== item.id));
 
   try {
-    await fetch('http://localhost:8001/api/delete-message', {
+    await fetch('https://hogwarts-2.onrender.com/api/delete-message', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1150,7 +1150,7 @@ const {
 
     const loadHistory = async () => {
       try {
-        const res = await fetch(`http://localhost:8001/api/history?session_id=${encodeURIComponent(sessionId)}`);
+        const res = await fetch(`https://hogwarts-2.onrender.com/api/history?session_id=${encodeURIComponent(sessionId)}`);
         if (!res.ok) return;
         const data = await res.json();
         const msgs: any[] = data.messages || [];
@@ -1177,7 +1177,7 @@ const {
         if (activeCharacter && !activeCharacter.house) {
           // game_state'ten house'u çek
           try {
-            const gsRes = await fetch(`http://localhost:8001/api/house-points?session_id=${encodeURIComponent(sessionId)}`);
+            const gsRes = await fetch(`https://hogwarts-2.onrender.com/api/house-points?session_id=${encodeURIComponent(sessionId)}`);
             if (gsRes.ok) {
               const gsData = await gsRes.json();
               const ph = gsData.game_state?.player_house;
@@ -1284,7 +1284,7 @@ const {
 
     // Call backend to set player house
     try {
-      await fetch('http://localhost:8001/api/set-house', {
+      await fetch('https://hogwarts-2.onrender.com/api/set-house', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionId, house }),
@@ -1344,7 +1344,7 @@ const {
   const fetchHousePoints = async () => {
     if (!sessionId) return;
     try {
-      const res = await fetch(`http://localhost:8001/api/house-points?session_id=${encodeURIComponent(sessionId)}`);
+      const res = await fetch(`https://hogwarts-2.onrender.com/api/house-points?session_id=${encodeURIComponent(sessionId)}`);
       if (!res.ok) return;
       const data = await res.json();
       if (data.points) setHousePoints(data.points);
@@ -1357,7 +1357,7 @@ const {
   const fetchSchedule = async () => {
     if (!sessionId) return;
     try {
-      const res = await fetch(`http://localhost:8001/api/schedule?session_id=${encodeURIComponent(sessionId)}`);
+      const res = await fetch(`https://hogwarts-2.onrender.com/api/schedule?session_id=${encodeURIComponent(sessionId)}`);
       if (!res.ok) return;
       const data = await res.json();
       setScheduleData(data);
@@ -1368,7 +1368,7 @@ const {
   const fetchLocation = async () => {
     if (!sessionId) return;
     try {
-      const res = await fetch(`http://localhost:8001/api/schedule?session_id=${encodeURIComponent(sessionId)}`);
+      const res = await fetch(`https://hogwarts-2.onrender.com/api/schedule?session_id=${encodeURIComponent(sessionId)}`);
       if (!res.ok) return;
       const data = await res.json();
       if (data.location) setCurrentLocation(data.location);

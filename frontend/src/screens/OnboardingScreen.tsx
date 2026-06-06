@@ -58,7 +58,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await fetch(`http://localhost:8001/api/messages?session_id=${encodeURIComponent(deleteTarget.sessionId)}`, {
+      await fetch(`https://hogwarts-2.onrender.com/api/messages?session_id=${encodeURIComponent(deleteTarget.sessionId)}`, {
         method: 'DELETE',
       });
       const updated = characters.filter((c: any) => c.id !== deleteTarget.id);
