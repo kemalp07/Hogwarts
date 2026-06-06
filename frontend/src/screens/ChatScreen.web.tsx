@@ -18,7 +18,7 @@ import {
   View,
 } from 'react-native';
 import { Asset } from 'expo-asset';
-import { useAppContext, Message } from '../context/AppContext';
+import { useAppContext, Message, saveCharacterToDB } from '../context/AppContext';
 import { getFirstMessage } from '../services/characterCard';
 import { sendMessage as sendAiMessage } from '../services/aiService';
 
@@ -1245,6 +1245,10 @@ const {
 
   const handleHouseSelect = async (house: string) => {
     setHogwartsHouse(house);
+    if (activeCharacter) {
+      const updatedChar = { ...activeCharacter, house };
+      saveCharacterToDB(updatedChar, sessionId);
+    }
     setPlayerHouse(house.toLowerCase());
     setShowHouseSelection(false);
 
