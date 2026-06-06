@@ -230,14 +230,61 @@ function BubbleInlineActions({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <View style={styles.bubbleInlineActions}>
-      <Pressable onPress={onEdit}>
-        <Text style={styles.bubbleInlineEdit}>✏</Text>
+    <View style={{ position: 'absolute', top: 4, right: 8, zIndex: 20 }}>
+      <Pressable onPress={() => setOpen((o) => !o)}>
+        <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, letterSpacing: 2 }}>•••</Text>
       </Pressable>
-      <Pressable onPress={onDelete}>
-        <Text style={styles.bubbleInlineDelete}>✕</Text>
-      </Pressable>
+
+      {open && (
+        <>
+          <Pressable
+            onPress={() => setOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 25,
+            } as any}
+          />
+          <View style={{
+            position: 'absolute',
+            bottom: 24,
+            right: 0,
+            backgroundColor: 'rgba(15,10,3,0.97)',
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: 'rgba(201,168,76,0.2)',
+            flexDirection: 'row',
+            overflow: 'hidden',
+            zIndex: 30,
+          }}>
+            <Pressable
+              onPress={() => {
+                setOpen(false);
+                onEdit();
+              }}
+              style={{ paddingHorizontal: 14, paddingVertical: 8 }}
+            >
+              <Text style={{ color: '#c9a84c', fontSize: 12 }}>Düzenle</Text>
+            </Pressable>
+            <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
+            <Pressable
+              onPress={() => {
+                setOpen(false);
+                onDelete();
+              }}
+              style={{ paddingHorizontal: 14, paddingVertical: 8 }}
+            >
+              <Text style={{ color: '#e87a7a', fontSize: 12 }}>Sil</Text>
+            </Pressable>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -420,7 +467,8 @@ function AIMessageBubble({
   setEditText,
   setEditingId,
   setMessages,
-}: MessageEditProps) {
+  scheduleData,
+}: MessageEditProps & { scheduleData?: any }) {
   if (isErrorMessage(item.text)) {
     return (
       <View style={styles.aiBlockRow}>
@@ -487,6 +535,18 @@ function AIMessageBubble({
               <Text style={styles.aiBlockName}>{block.name}</Text>
               <View style={styles.aiBubble}>
                 <BubbleInlineActions onEdit={startEdit} onDelete={handleDelete} />
+                {scheduleData && (
+                  <Text style={{
+                    color: 'rgba(201,168,76,0.65)',
+                    fontSize: 10,
+                    fontFamily: 'Cinzel, serif',
+                    fontWeight: '600',
+                    marginBottom: 6,
+                    letterSpacing: 0.5,
+                  }}>
+                    📅 {scheduleData.day_name} • {scheduleData.week}. Hafta • 🕙 {String(scheduleData.hour).padStart(2, '0')}:00
+                  </Text>
+                )}
                 <View style={styles.aiMessageRoot}>
                   {parseAIMessage(cleanContent(block.content))}
                 </View>
@@ -1322,6 +1382,7 @@ const {
                     setEditText={setEditText}
                     setEditingId={setEditingId}
                     setMessages={setMessages}
+                    scheduleData={scheduleData}
                   />
                 ) : (
                   <MessageBubble
@@ -1517,22 +1578,6 @@ const styles = StyleSheet.create({
   userRow: {
     width: '100%',
     alignItems: 'flex-end',
-  },
-  bubbleInlineActions: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    flexDirection: 'row',
-    gap: 4,
-    zIndex: 10,
-  },
-  bubbleInlineEdit: {
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 9,
-  },
-  bubbleInlineDelete: {
-    color: 'rgba(255,255,255,0.25)',
-    fontSize: 9,
   },
   userBubble: {
     borderTopLeftRadius: 14,

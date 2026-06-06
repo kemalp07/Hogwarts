@@ -353,6 +353,15 @@ async def run_simulation_endpoint(request: Request):
 
     if ai_response:
         try:
+            last_user_content = next(
+                (t.get("content", "") for t in reversed(conversation) if t.get("role") == "user"),
+                "",
+            )
+            sleep_triggered = check_sleep_trigger(last_user_content)
+            # Önce otomatik +1 saat ilerlet (uyku haricinde zaten advance_hour çağrılmadıysa)
+            if not sleep_triggered:
+                advance_hour(session_id, hours=1)
+            # Sonra AI tag'i varsa override et (büyük atlamalar için)
             await extract_time_from_response(session_id, ai_response)
         except Exception as e:
             logger.error(f"extract_time_from_response error: {e}")
