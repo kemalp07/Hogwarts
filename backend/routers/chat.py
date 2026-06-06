@@ -157,8 +157,8 @@ async def chat_endpoint(request: Request):
                 {"session_id": session_id, "last_activity_at": datetime.utcnow().isoformat()},
                 on_conflict="session_id"
             ).execute()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"last_activity_at update error: {e}")
 
     house_points = get_house_points(session_id)
 

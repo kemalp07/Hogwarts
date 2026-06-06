@@ -226,12 +226,12 @@ _scheduler_lock = threading.Lock()
 
 
 def _get_all_active_sessions() -> list[str]:
-    """Son 5 dakikada aktif olan sessionları çek."""
+    """Son 15 dakikada aktif olan sessionları çek."""
     if not supabase:
         return []
     try:
         from datetime import timedelta
-        cutoff = (datetime.utcnow() - timedelta(minutes=5)).isoformat()
+        cutoff = (datetime.utcnow() - timedelta(minutes=15)).isoformat()
         resp = supabase.table("game_state").select("session_id").gte("last_activity_at", cutoff).execute()
         return [row["session_id"] for row in (resp.data or [])]
     except Exception as e:
