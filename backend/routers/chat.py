@@ -1,7 +1,8 @@
 import logging
+import asyncio
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Query
+from fastapi import APIRouter, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 import os
 import uuid
@@ -173,7 +174,6 @@ async def chat_endpoint(request: Request):
     )
 
     model = body.get("model") or os.getenv("VERTEX_AI_MODEL", "gemini-2.0-flash-001")
-    background_tasks = BackgroundTasks()
     memory_state = {
         "full_text": "",
         "conversation": conversation_for_memory,
@@ -279,7 +279,15 @@ async def chat_endpoint(request: Request):
         })
         yield f"data: {done}\n\n"
 
-    background_tasks.add_task(persist_memory_after_response, session_id, character_id, memory_state)
+        # Stream bitti — background task'ları burada başlat
+        asyncio.create_task(persist_memory_after_response(session_id, character_id, memory_state))
+        asyncio.create_task(_run_simulation(
+            session_id,
+            conversation_for_memory,
+            game_state.get("player_house", "gryffindor"),
+            game_state.get("current_week", 1),
+            game_state.get("current_day", 1),
+        ))
 
     async def _run_simulation(sid: str, conv: list, house: str, w: int, d: int):
         logger.info(f"[{sid}] Starting simulation house={house} w={w} d={d}")
@@ -289,15 +297,6 @@ async def chat_endpoint(request: Request):
         except Exception as e:
             logger.error(f"Simulation bg error: {e}", exc_info=True)
 
-    background_tasks.add_task(
-        _run_simulation,
-        session_id,
-        conversation_for_memory,
-        game_state.get("player_house", "gryffindor"),
-        game_state.get("current_week", 1),
-        game_state.get("current_day", 1),
-    )
-
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
@@ -305,7 +304,6 @@ async def chat_endpoint(request: Request):
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
         },
-        background=background_tasks,
     )
 
 

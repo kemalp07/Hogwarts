@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react';
 
 export type Message = {
   id: string;
@@ -54,12 +54,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const activeChar = characters.find((c: any) => c.id === activeCharId);
     return activeChar || null;
   });
-  const [sessionId] = useState(() => {
-    const activeCharId = localStorage.getItem('hp_active_character_id');
-    const characters = JSON.parse(localStorage.getItem('hp_characters') || '[]');
-    const activeChar = characters.find((c: any) => c.id === activeCharId);
-    return activeChar?.sessionId || crypto.randomUUID();
-  });
+  const sessionId = useMemo(() => {
+    return activeCharacter?.sessionId || crypto.randomUUID();
+  }, [activeCharacter]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [housePoints, setHousePoints] = useState<{ gryffindor: number; hufflepuff: number; ravenclaw: number; slytherin: number }>(
