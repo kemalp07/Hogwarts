@@ -232,6 +232,13 @@ function BubbleInlineActions({
 }) {
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    const handler = () => setOpen(false);
+    window.addEventListener('click', handler);
+    return () => window.removeEventListener('click', handler);
+  }, [open]);
+
   return (
     <View style={{ position: 'absolute', top: 4, right: 8, zIndex: 20 }}>
       <Pressable onPress={() => setOpen((o) => !o)}>
@@ -243,13 +250,13 @@ function BubbleInlineActions({
           <Pressable
             onPress={() => setOpen(false)}
             style={{
-              position: 'fixed',
+              position: 'fixed' as any,
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
               zIndex: 25,
-            } as any}
+            }}
           />
           <View style={{
             position: 'absolute',
