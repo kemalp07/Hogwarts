@@ -1,41 +1,45 @@
 {
   "academic_year": "1991-1992",
-  "weeks": [
-    {
-      "week": 1,
-      "label": "İlk Hafta",
-      "days": {
-        "1": [
-          {"time": "09:00", "subject": "Büyülü İksirler", "teacher": "Snape", "location": "dungeons", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": "Snape ilk derste herkesi sınava çekiyor."},
-          {"time": "14:00", "subject": "Uçuş Dersi", "teacher": "Hooch", "location": "quidditch_field", "house_penalty": null, "lore_hint": "Neville'in süpürgesi kontrolden çıkıyor."}
-        ],
-        "2": [
-          {"time": "09:00", "subject": "Büyü", "teacher": "Flitwick", "location": "charms_classroom", "house_penalty": {"house": "player", "delta": -3}, "lore_hint": null},
-          {"time": "11:00", "subject": "Dönüşüm", "teacher": "McGonagall", "location": "transfiguration_classroom", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": "McGonagall hiç şaka yapmaz."}
-        ],
-        "3": [
-          {"time": "09:00", "subject": "Büyülü İksirler", "teacher": "Snape", "location": "dungeons", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": null},
-          {"time": "14:00", "subject": "Tarih", "teacher": "Binns", "location": "history_classroom", "house_penalty": null, "lore_hint": "Herkes uyuyor."}
-        ],
-        "4": [
-          {"time": "09:00", "subject": "Astronomi", "teacher": "Sinistra", "location": "astronomy_tower", "house_penalty": {"house": "player", "delta": -3}, "lore_hint": null},
-          {"time": "14:00", "subject": "Büyü", "teacher": "Flitwick", "location": "charms_classroom", "house_penalty": {"house": "player", "delta": -3}, "lore_hint": null}
-        ],
-        "5": [
-          {"time": "09:00", "subject": "Dönüşüm", "teacher": "McGonagall", "location": "transfiguration_classroom", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": null},
-          {"time": "15:00", "subject": "Serbest Çalışma", "teacher": null, "location": "library", "house_penalty": null, "lore_hint": null}
-        ],
-        "6": [],
-        "7": []
-      }
-    }
-  ],
+  "weekly_schedule": {
+    "1": [
+      {"time": "09:00", "subject": "Büyülü İksirler", "teacher": "Snape", "location": "dungeons", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": "Snape ilk derste herkesi sınava çekiyor."},
+      {"time": "14:00", "subject": "Uçuş Dersi", "teacher": "Hooch", "location": "quidditch_field", "house_penalty": {"house": "player", "delta": -3}, "lore_hint": "Neville'in süpürgesi kontrolden çıkıyor."}
+    ],
+    "2": [
+      {"time": "09:00", "subject": "Büyü", "teacher": "Flitwick", "location": "charms_classroom", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": null},
+      {"time": "11:00", "subject": "Dönüşüm", "teacher": "McGonagall", "location": "transfiguration_classroom", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": "McGonagall hiç şaka yapmaz."},
+      {"time": "15:00", "subject": "Bitkibilim", "teacher": "Sprout", "location": "greenhouse", "house_penalty": {"house": "player", "delta": -3}, "lore_hint": null}
+    ],
+    "3": [
+      {"time": "09:00", "subject": "Büyülü İksirler", "teacher": "Snape", "location": "dungeons", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": null},
+      {"time": "13:00", "subject": "Karanlık Sanatlara Karşı Korunma", "teacher": "Quirrell", "location": "dada_classroom", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": "Quirrell bugün özellikle gergin görünüyor."},
+      {"time": "15:00", "subject": "Tarih", "teacher": "Binns", "location": "history_classroom", "house_penalty": {"house": "player", "delta": -2}, "lore_hint": "Herkes uyuyor."}
+    ],
+    "4": [
+      {"time": "09:00", "subject": "Astronomi", "teacher": "Sinistra", "location": "astronomy_tower", "house_penalty": {"house": "player", "delta": -3}, "lore_hint": null},
+      {"time": "11:00", "subject": "Büyü", "teacher": "Flitwick", "location": "charms_classroom", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": null},
+      {"time": "14:00", "subject": "Bitkibilim", "teacher": "Sprout", "location": "greenhouse", "house_penalty": {"house": "player", "delta": -3}, "lore_hint": null}
+    ],
+    "5": [
+      {"time": "09:00", "subject": "Dönüşüm", "teacher": "McGonagall", "location": "transfiguration_classroom", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": null},
+      {"time": "11:00", "subject": "Karanlık Sanatlara Karşı Korunma", "teacher": "Quirrell", "location": "dada_classroom", "house_penalty": {"house": "player", "delta": -5}, "lore_hint": null},
+      {"time": "14:00", "subject": "Serbest Çalışma", "teacher": null, "location": "library", "house_penalty": null, "lore_hint": null}
+    ],
+    "6": [],
+    "7": []
+  },
   "special_events": [
-    {"week": 1, "day": 1, "label": "Hogwarts'a İlk Varış", "spike": {"gryffindor": 0, "hufflepuff": 0, "ravenclaw": 0, "slytherin": 0}},
-    {"week": 3, "day": 6, "label": "Quidditch Maçı: Gryffindor vs Slytherin", "spike": {"gryffindor": 50, "slytherin": -20}},
-    {"week": 5, "day": 5, "label": "Cadılar Bayramı Ziyafeti", "spike": {"gryffindor": 5, "hufflepuff": 5, "ravenclaw": 5, "slytherin": 5}},
-    {"week": 8, "day": 3, "label": "Snape Gryffindor'ı Cezalandırıyor", "spike": {"gryffindor": -15}},
-    {"week": 12, "day": 5, "label": "Noel Tatili Başlıyor", "spike": {}}
+    {"week": 1, "day": 1, "label": "Hogwarts'a İlk Varış — Seçmen Şapka Töreni", "spike": {}},
+    {"week": 2, "day": 6, "label": "Quidditch Seçmeleri — Gryffindor", "spike": {"gryffindor": 0}},
+    {"week": 3, "day": 5, "label": "Cadılar Bayramı Ziyafeti", "spike": {"gryffindor": 3, "hufflepuff": 3, "ravenclaw": 3, "slytherin": 3}},
+    {"week": 4, "day": 2, "label": "Trol Olayı — Hogwarts'ta Alarm", "spike": {"gryffindor": 5}},
+    {"week": 6, "day": 6, "label": "İlk Quidditch Maçı: Gryffindor vs Slytherin", "spike": {"gryffindor": 50, "slytherin": -10}},
+    {"week": 8, "day": 3, "label": "Snape Gryffindor'ı Cezalandırıyor", "spike": {"gryffindor": -10}},
+    {"week": 10, "day": 5, "label": "Büyü Dersi Sınavı — Flitwick", "spike": {}},
+    {"week": 12, "day": 5, "label": "Noel Tatili Başlıyor", "spike": {}},
+    {"week": 20, "day": 1, "label": "Bahar Dönemi Başlıyor", "spike": {}},
+    {"week": 28, "day": 1, "label": "Yıl Sonu Sınavları — OWL Hazırlık", "spike": {}},
+    {"week": 34, "day": 5, "label": "Yıl Sonu Ziyafeti", "spike": {"gryffindor": 10, "hufflepuff": 10, "ravenclaw": 10, "slytherin": 10}}
   ],
   "micro_drift": {
     "description": "Her gün geçişinde tüm evler için rastgele küçük değişim",

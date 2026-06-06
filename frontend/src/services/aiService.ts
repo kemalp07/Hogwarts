@@ -80,6 +80,12 @@ export async function sendMessage(
     let housePoints: { gryffindor: number; hufflepuff: number; ravenclaw: number; slytherin: number } | undefined;
     let gameState: { week: number; day: number; playerHouse: string } | undefined;
     let narratorInjection: string | undefined;
+    let simulationParams: {
+      session_id: string;
+      player_house: string;
+      week: number;
+      day: number;
+    } | undefined;
 
     for (const line of raw.split('\n')) {
       if (!line.startsWith('data: ')) {
@@ -121,34 +127,42 @@ export async function sendMessage(
           }
 
           if (parsed.simulation_params) {
-            const sp = parsed.simulation_params;
-            fetch('http://localhost:8001/api/run-simulation', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                session_id: sp.session_id,
-                player_house: sp.player_house,
-                week: sp.week,
-                day: sp.day,
-                player_name: userName,
-                player_attraction: playerAttraction,
-                conversation: messages.slice(-10).map((m) => ({
-                  role: m.role === 'ai' ? 'assistant' : 'user',
-                  content: m.text || '',
-                })),
-              }),
-            })
-              .then((r) => r.json())
-              .then((data) => {
-                if (data.house_points) {
-                  housePoints = data.house_points;
-                }
-              })
-              .catch(() => {});
+            simulationParams = parsed.simulation_params;
           }
         }
       } catch {
         // Ignore malformed SSE chunks.
+      }
+    }
+
+    if (simulationParams) {
+      const sp = simulationParams;
+      try {
+        const simRes = await fetch('http://localhost:8001/api/run-simulation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sp.session_id,
+            player_house: sp.player_house,
+            week: sp.week,
+            day: sp.day,
+            player_name: userName,
+            player_attraction: playerAttraction,
+            conversation: messages.slice(-10).map((m) => ({
+              role: m.role === 'ai' ? 'assistant' : 'user',
+              content: m.text || '',
+            })),
+          }),
+        });
+        const data = await simRes.json();
+        if (data.house_points) {
+          housePoints = data.house_points;
+        }
+        if (data.surprise_event) {
+          narratorInjection = (narratorInjection || '') + '\n' + data.surprise_event;
+        }
+      } catch {
+        // Simulation optional — chat response still valid.
       }
     }
 

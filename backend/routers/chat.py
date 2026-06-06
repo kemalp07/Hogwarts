@@ -338,8 +338,9 @@ async def run_simulation_endpoint(request: Request):
         return JSONResponse(content={"status": "error", "detail": "session_id required"})
 
     logger.info(f"[{session_id}] Starting simulation house={player_house} w={week} d={day}")
+    surprise = None
     try:
-        await run_point_simulation(session_id, conversation, player_house, week, day)
+        surprise = await run_point_simulation(session_id, conversation, player_house, week, day)
         logger.info(f"[{session_id}] Simulation complete")
     except Exception as e:
         logger.error(f"Simulation error: {e}", exc_info=True)
@@ -355,7 +356,11 @@ async def run_simulation_endpoint(request: Request):
         logger.error(f"Relationship analysis error: {e}")
 
     points = get_house_points(session_id)
-    return JSONResponse(content={"status": "ok", "house_points": points})
+    return JSONResponse(content={
+        "status": "ok",
+        "house_points": points,
+        "surprise_event": surprise,
+    })
 
 
 @router.delete("/api/messages")

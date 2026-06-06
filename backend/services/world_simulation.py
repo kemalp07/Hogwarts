@@ -205,20 +205,65 @@ Format (4 evin TÜMÜ dahil olmalı, eksik ev kabul edilmez):
         _apply_changes(session_id, changes)
 
 
+async def maybe_generate_surprise_event(session_id: str, week: int, day: int) -> str | None:
+    """
+    Haftada 1-2 kez küçük bir sürpriz olay üretir.
+    Abartılı değil — günlük Hogwarts yaşamından küçük detaylar.
+    %15 ihtimalle tetiklenir.
+    """
+    if random.random() > 0.15:
+        return None
+
+    day_names = {1: "Pazartesi", 2: "Salı", 3: "Çarşamba", 4: "Perşembe",
+                 5: "Cuma", 6: "Cumartesi", 7: "Pazar"}
+    day_name = day_names.get(day, "gün")
+
+    prompt = f"""1991-92 Hogwarts'ta {week}. hafta, {day_name} günü.
+Bugün için küçük, sıradan ama ilginç bir okul olayı üret.
+ABARTMA — büyük dramatik olaylar değil, günlük Hogwarts yaşamı.
+
+Örnekler:
+- Koridor baykuşu yanlış odaya girdi
+- Kantinde garip bir yemek çıktı
+- Bir öğrenci yanlış büyü yaptı, komik sonuç oldu
+- Kütüphanede nadir bir kitap kayboldu
+- Peeves koridorda şakalar yapıyor
+
+SADECE tek cümle, Türkçe, narrator sesiyle yaz. JSON değil, düz metin.
+Başına [NARRATOR] koy."""
+
+    text = await _call_vertex(prompt, max_tokens=80, temperature=0.9)
+    if text and len(text) > 10:
+        logger.info(f"[{session_id}] Surprise event generated")
+        return text.strip()
+    return None
+
+
 async def run_point_simulation(
     session_id: str,
     conversation: list,
     player_house: str,
     week: int = 1,
     day: int = 1,
-):
-    """Ana fonksiyon — background task buraya çağrı yapar."""
+) -> str | None:
+    """Ana fonksiyon. Sürpriz olay varsa döner."""
     import asyncio
-    await asyncio.gather(
-        analyze_conversation_points(session_id, conversation, player_house),
-        simulate_world_events(session_id, week, day),
-        return_exceptions=True,
-    )
+
+    async def _sim():
+        await asyncio.gather(
+            analyze_conversation_points(session_id, conversation, player_house),
+            simulate_world_events(session_id, week, day),
+            return_exceptions=True,
+        )
+
+    surprise_task = asyncio.create_task(maybe_generate_surprise_event(session_id, week, day))
+    await _sim()
+
+    try:
+        return await surprise_task
+    except Exception as e:
+        logger.error(f"Surprise event error: {e}")
+        return None
 
 
 _scheduler_started = False
