@@ -408,12 +408,11 @@ const {
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
 
   useEffect(() => {
+    if (localStorage.getItem('hp_house')) return; // already played, skip
     const firstMes = getFirstMessage(0);
     const personalizedMessage = firstMes.replace(/\{\{user\}\}/g, userName || '');
     setMessages([createMessage('ai', personalizedMessage)]);
-    if (!localStorage.getItem('hp_house')) {
-      setShowHouseSelection(true);
-    }
+    setShowHouseSelection(true);
   }, [setMessages, userName]);
 
   useEffect(() => {
@@ -435,9 +434,7 @@ const {
         const msgs = data.messages || [];
         
         if (msgs.length === 0) {
-          // No history — trigger opening scene
-          setShowHouseSelection(false);
-          return;
+          return; // no history, house selection will show if needed
         }
 
         const loaded: Message[] = msgs.map((m: any) => ({

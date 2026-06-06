@@ -21,9 +21,12 @@ supabase = None
 if create_client and SUPABASE_URL and SUPABASE_SERVICE_KEY:
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    except Exception:
-        logger.debug("Supabase client could not be created")
+        logger.info(f"Supabase client created successfully")
+    except Exception as e:
+        logger.warning(f"Supabase client could not be created: {e}")
         supabase = None
+else:
+    logger.warning(f"Supabase credentials missing: URL={bool(SUPABASE_URL)}, KEY={bool(SUPABASE_SERVICE_KEY)}, client={bool(create_client)}")
 
 
 def insert_message(session_id: str, character_id: str | None, role: str, content: str):
