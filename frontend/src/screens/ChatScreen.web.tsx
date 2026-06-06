@@ -120,6 +120,7 @@ const TAG_AVATARS: Record<string, any> = {
 
 const TAG_NAMES: Record<string, string> = {
   NARRATOR: 'Anlatıcı',
+  SORTING_HAT: 'Seçmen Şapka',
   HARRY: 'Harry Potter',
   HERMIONE: 'Hermione Granger',
   RON: 'Ron Weasley',
@@ -242,8 +243,11 @@ function parseTaggedResponse(text: string): Array<{ tag: string; name: string; c
   return blocks;
 }
 
+const cleanContent = (text: string) => text.replace(/<[^>]*>/g, '').trim();
+
 function parseAIMessage(text: string): React.ReactNode {
-  const paragraphs = text.split(/\n\n+/).filter((paragraph) => paragraph.trim() !== '');
+  const cleanedText = cleanContent(text);
+  const paragraphs = cleanedText.split(/\n\n+/).filter((paragraph) => paragraph.trim() !== '');
 
   return (
     <>
@@ -334,10 +338,10 @@ function renderAIMessage(item: Message) {
   const mergedBlocks = taggedBlocks.reduce((acc: typeof taggedBlocks, block) => {
     const last = acc[acc.length - 1];
     if (last && last.tag === block.tag) {
-      last.content = last.content + '\n' + block.content;
+      last.content = last.content + '\n' + cleanContent(block.content);
       return acc;
     }
-    acc.push({ ...block });
+    acc.push({ ...block, content: cleanContent(block.content) });
     return acc;
   }, []);
 
@@ -352,7 +356,7 @@ function renderAIMessage(item: Message) {
             <View style={styles.aiBlockBody}>
               <Text style={styles.aiBlockName}>{block.name}</Text>
               <View style={styles.aiBubble}>
-                <View style={styles.aiMessageRoot}>{parseAIMessage(block.content)}</View>
+                <View style={styles.aiMessageRoot}>{parseAIMessage(cleanContent(block.content))}</View>
               </View>
             </View>
           </View>
