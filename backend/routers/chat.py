@@ -128,6 +128,7 @@ async def chat_endpoint(request: Request):
     character_id = body.get("character_id") or "hogwarts-narrator"
     location_id = body.get("location_id") or "great-hall"
     user_name = body.get("user_name") or "Öğrenci"
+    character_profile = body.get("character_profile")
 
     # allow empty message for initial opening prompts; message may be empty string
 
@@ -147,6 +148,7 @@ async def chat_endpoint(request: Request):
         location_id=location_id,
         messages=conversation_messages,
         memories=memories,
+        character_profile=character_profile,
     )
 
     model = body.get("model") or os.getenv("VERTEX_AI_MODEL", "gemini-2.0-flash-001")

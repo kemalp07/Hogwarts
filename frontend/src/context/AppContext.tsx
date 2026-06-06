@@ -18,6 +18,8 @@ export type AppContextType = {
   setIsLoading: (val: boolean) => void;
   hogwartsHouse: string;
   setHogwartsHouse: (house: string) => void;
+  characterProfile: any;
+  setCharacterProfile: (profile: any) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -35,6 +37,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hogwartsHouse, setHogwartsHouse] = useState<string>(
     () => localStorage.getItem('hp_house') || ''
+  );
+  const [characterProfile, setCharacterProfile] = useState(
+    () => {
+      const saved = localStorage.getItem('hp_character');
+      return saved ? JSON.parse(saved) : null;
+    }
   );
 
   useEffect(() => {
@@ -58,6 +66,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setIsLoading,
         hogwartsHouse,
         setHogwartsHouse,
+        characterProfile,
+        setCharacterProfile,
       }}
     >
       {children}

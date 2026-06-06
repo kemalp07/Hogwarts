@@ -26,6 +26,7 @@ export async function sendMessage(
   userName: string,
   house: string = '',
   sessionId: string = '',
+  characterProfile: any = null,
 ): Promise<AIMessageResult> {
   try {
     const history: ApiMessage[] = messages
@@ -42,6 +43,7 @@ export async function sendMessage(
       location_id: 'great-hall',
       history,
       session_id: sessionId,
+      character_profile: characterProfile,
     };
 
     const response = await fetch(API_URL, {

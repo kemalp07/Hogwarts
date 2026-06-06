@@ -19,6 +19,7 @@ type OnboardingScreenProps = {
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   const [inputValue, setInputValue] = useState('');
   const { setUserName } = useAppContext();
+  const hasSavedCharacter = !!localStorage.getItem('hp_character');
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -31,16 +32,33 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
 
   useEffect(() => {
     if (localStorage.getItem('hp_user_name')) {
-      navigation.navigate('Chat');
+      if (hasSavedCharacter) {
+        navigation.navigate('Chat');
+      } else {
+        navigation.navigate('CharacterCreation');
+      }
     }
-  }, []);
+  }, [hasSavedCharacter]);
 
   const handleStartPress = () => {
     const trimmedName = inputValue.trim();
     if (trimmedName.length > 0) {
       setUserName(trimmedName);
-      navigation.navigate('Chat');
+      navigation.navigate('CharacterCreation');
     }
+  };
+
+  const handleContinue = () => {
+    navigation.navigate('Chat');
+  };
+
+  const handleNewCharacter = () => {
+    localStorage.removeItem('hp_character');
+    localStorage.removeItem('hp_house');
+    localStorage.removeItem('hp_session_id');
+    const newSession = Math.random().toString(36).slice(2);
+    localStorage.setItem('hp_session_id', newSession);
+    navigation.navigate('CharacterCreation');
   };
 
   const isButtonDisabled = inputValue.trim().length === 0;
@@ -65,34 +83,56 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
 
         <Text style={styles.title}>Hogwarts'a Hoş Geldin</Text>
 
-        <Text style={styles.subtitle}>Adın ne, genç büyücü?</Text>
+        {hasSavedCharacter ? (
+          <>
+            <Text style={styles.subtitle}>Kayıtlı karakterin var</Text>
 
-        <TextInput
-          style={[styles.input, WEB_INPUT_RESET]}
-          placeholder="Adını gir..."
-          placeholderTextColor="rgba(245, 220, 180, 0.4)"
-          value={inputValue}
-          onChangeText={setInputValue}
-          editable={true}
-        />
+            <Pressable
+              style={styles.button}
+              onPress={handleContinue}
+            >
+              <Text style={styles.buttonText}>Devam Et</Text>
+            </Pressable>
 
-        <Pressable
-          style={[
-            styles.button,
-            isButtonDisabled && styles.buttonDisabled,
-          ]}
-          onPress={handleStartPress}
-          disabled={isButtonDisabled}
-        >
-          <Text
-            style={[
-              styles.buttonText,
-              isButtonDisabled && styles.buttonTextDisabled,
-            ]}
-          >
-            Hogwarts'a Başla
-          </Text>
-        </Pressable>
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={handleNewCharacter}
+            >
+              <Text style={styles.secondaryButtonText}>Yeni Karakter</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text style={styles.subtitle}>Adın ne, genç büyücü?</Text>
+
+            <TextInput
+              style={[styles.input, WEB_INPUT_RESET]}
+              placeholder="Adını gir..."
+              placeholderTextColor="rgba(245, 220, 180, 0.4)"
+              value={inputValue}
+              onChangeText={setInputValue}
+              editable={true}
+            />
+
+            <Pressable
+              style={[
+                styles.button,
+                isButtonDisabled && styles.buttonDisabled,
+              ]}
+              onPress={handleStartPress}
+              disabled={isButtonDisabled}
+            >
+              <Text
+                style={[
+                  styles.buttonText,
+                  isButtonDisabled && styles.buttonTextDisabled,
+                ]}
+              >
+                Hogwarts'a Başla
+              </Text>
+            </Pressable>
+          </>
+        )}
       </View>
       </ImageBackground>
     </SafeAreaView>
@@ -176,5 +216,24 @@ const styles = StyleSheet.create({
   },
   buttonTextDisabled: {
     color: 'rgba(245, 220, 180, 0.4)',
+  },
+  secondaryButton: {
+    width: '72%',
+    maxWidth: 360,
+    alignSelf: 'center',
+    height: 48,
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 220, 180, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  secondaryButtonText: {
+    color: 'rgba(245, 220, 180, 0.7)',
+    fontSize: 16,
+    fontWeight: '500',
+    letterSpacing: 1,
   },
 });

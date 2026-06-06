@@ -182,7 +182,7 @@ def get_lorebook_entries(text: str, max_entries: int = 8) -> list[str]:
 
     return (constant_entries + matched_entries)[:max_entries]
 
-async def build_prompt(user_name: str, character_id: str, location_id: str, messages: List[dict], memories: List[str]) -> list:
+async def build_prompt(user_name: str, character_id: str, location_id: str, messages: List[dict], memories: List[str], character_profile: dict = None) -> list:
     """Builds the system prompt using the character card, lorebook, and seed data."""
     project_root = _project_root()
     char_path = project_root / "database" / "seed_data" / "characters.json"
@@ -268,6 +268,23 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
     ]
 
     system_content = "\n\n".join(part for part in system_parts if part).replace("{{user}}", user_name or "Öğrenci")
+
+    if character_profile:
+        char_desc = f"""
+## OYUNCU KARAKTERİ:
+- İsim: {user_name}
+- Cinsiyet: {character_profile.get('gender', '')}
+- Boy: {character_profile.get('height', '')}
+- Saç rengi: {character_profile.get('hairColor', '')}
+- Kişilik: {', '.join(character_profile.get('traits', []))}
+- Köken: {character_profile.get('origin', '')}
+- Korkusu: {character_profile.get('fear', '')}
+- Hobisi: {character_profile.get('hobby', '')}
+- Gizli özellik (sadece sen bil, zamanla hikayede kullan): {character_profile.get('secretTrait', '')}
+"""
+        system_parts.insert(1, char_desc)
+        system_content = "\n\n".join(part for part in system_parts if part).replace("{{user}}", user_name or "Öğrenci")
+
     narrative_context = """
 
 ### NARRATIVE TIMELINE & WORLD STATE:

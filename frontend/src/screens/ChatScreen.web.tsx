@@ -382,6 +382,7 @@ const {
   setIsLoading,
   hogwartsHouse,
   setHogwartsHouse,
+  characterProfile,
 } = useAppContext();
 
   useEffect(() => {
@@ -482,7 +483,7 @@ const {
     setIsLoading(true);
 
     try {
-      const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse, sessionId);
+      const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse, sessionId, characterProfile);
       setMessages([
         ...nextMessages,
         createMessage('ai', aiResponse.text, aiResponse.characterName),
@@ -516,7 +517,7 @@ const {
     setIsLoading(true);
 
     try {
-      const response = await sendAiMessage(nextMessages, userName, house, sessionId);
+      const response = await sendAiMessage(nextMessages, userName, house, sessionId, characterProfile);
       setMessages([
         ...nextMessages,
         createMessage('ai', response.text, response.characterName),
