@@ -1,4 +1,7 @@
+import logging
+logger = logging.getLogger(__name__)
 from typing import Optional
+import logging
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -16,6 +19,7 @@ from ..services.house_points_service import (
     apply_player_action,
     advance_day,
 )
+from ..services.world_simulation import run_point_simulation
 from ..db.supabase_client import insert_message, supabase
 import traceback
 from pathlib import Path
@@ -262,10 +266,38 @@ async def chat_endpoint(request: Request):
         char_name = detect_character(full_text)
         await save_messages(session_id, message, full_text)
 
-        done = json.dumps({"type": "done", "character_name": char_name})
+        # Simülasyon henüz background'da çalışıyor olabilir
+        # Mevcut puanı gönder — simülasyon bitince bir sonraki mesajda görünür
+        try:
+            _final_points = get_house_points(session_id)
+        except Exception:
+            _final_points = house_points
+
+        done = json.dumps({
+            "type": "done",
+            "character_name": char_name,
+            "house_points": _final_points,
+        })
         yield f"data: {done}\n\n"
 
     background_tasks.add_task(persist_memory_after_response, session_id, character_id, memory_state)
+
+    async def _run_simulation(sid: str, conv: list, house: str, w: int, d: int):
+        logger.info(f"[{sid}] Starting simulation house={house} w={w} d={d}")
+        try:
+            await run_point_simulation(sid, conv, house, w, d)
+            logger.info(f"[{sid}] Simulation complete")
+        except Exception as e:
+            logger.error(f"Simulation bg error: {e}", exc_info=True)
+
+    background_tasks.add_task(
+        _run_simulation,
+        session_id,
+        conversation_for_memory,
+        game_state.get("player_house", "gryffindor"),
+        game_state.get("current_week", 1),
+        game_state.get("current_day", 1),
+    )
 
     return StreamingResponse(
         generate(),
@@ -323,12 +355,17 @@ async def advance_day_endpoint(request: Request):
 async def set_house_endpoint(request: Request):
     body = await request.json()
     session_id = body.get("session_id", "")
-    house = body.get("house", "gryffindor")
-    if house not in ["gryffindor", "hufflepuff", "ravenclaw", "slytherin"]:
-        raise HTTPException(status_code=400, detail="Geçersiz ev")
+    house_raw = body.get("house", "")
+    house = house_raw.lower().strip()  # "Gryffindor" → "gryffindor"
+
+    valid = ["gryffindor", "hufflepuff", "ravenclaw", "slytherin"]
+    if not session_id or house not in valid:
+        raise HTTPException(status_code=400, detail=f"Geçersiz ev: '{house_raw}'")
+
     if supabase:
         supabase.table("game_state").upsert(
-            {"session_id": session_id, "player_house": house},
+            {"session_id": session_id, "player_house": house,
+             "current_week": 1, "current_day": 1, "current_hour": 8},
             on_conflict="session_id"
         ).execute()
     return {"status": "ok", "house": house}

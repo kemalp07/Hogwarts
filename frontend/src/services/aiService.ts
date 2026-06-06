@@ -98,8 +98,13 @@ export async function sendMessage(
           narratorInjection = parsed.narrator_injection;
         } else if (parsed.type === 'chunk' && parsed.text) {
           assembled += parsed.text;
-        } else if (parsed.type === 'done' && parsed.character_name) {
-          characterName = parsed.character_name;
+        } else if (parsed.type === 'done') {
+          if (parsed.character_name) {
+            characterName = parsed.character_name;
+          }
+          if (parsed.house_points) {
+            housePoints = parsed.house_points;
+          }
         }
       } catch {
         // Ignore malformed SSE chunks.

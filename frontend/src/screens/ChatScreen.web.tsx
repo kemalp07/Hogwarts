@@ -437,9 +437,9 @@ const HousePointsPanel: React.FC<HousePanelProps> = ({
         top: headerHeight,
         [side]: 0,
         flexDirection: 'row',
-        paddingTop: 12,
+        paddingTop: 16,
         paddingHorizontal: 8,
-        gap: 8,
+        gap: 30,
         zIndex: 20,
         alignItems: 'flex-start',
       }}
@@ -457,15 +457,15 @@ const HousePointsPanel: React.FC<HousePanelProps> = ({
             key={house}
             style={{
               alignItems: 'center',
-              gap: 4,
+              gap: 16,
             }}
           >
             {/* Rank numarası */}
             <View style={{
               position: 'absolute',
               top: 0, left: 0,
-              width: 18, height: 18,
-              borderRadius: 9,
+              width: 22, height: 22,
+              borderRadius: 11,
               backgroundColor: 'rgba(0,0,0,0.55)',
               borderWidth: 0.5,
               borderColor: accent,
@@ -474,7 +474,7 @@ const HousePointsPanel: React.FC<HousePanelProps> = ({
               zIndex: 1,
             }}>
               <Text style={{
-                fontSize: 9,
+                fontSize: 11,
                 fontWeight: '700',
                 color: accent,
                 fontFamily: 'Cinzel, serif',
@@ -487,8 +487,8 @@ const HousePointsPanel: React.FC<HousePanelProps> = ({
             <Image
               source={HOUSE_LOGOS[house]}
               style={{
-                width: 80,
-                height: 80,
+                width: 200,
+                height: 200,
                 resizeMode: 'contain',
                 opacity: isPlayer ? 1.0 : 0.8,
               }}
@@ -496,11 +496,11 @@ const HousePointsPanel: React.FC<HousePanelProps> = ({
 
             {/* Puan */}
             <Text style={{
-              fontSize: 22,
+              fontSize: 40,
               fontWeight: '700',
               color: scoreColor,
               fontFamily: 'Cinzel, serif',
-              lineHeight: 24,
+              lineHeight: 40,
               textShadowColor: 'rgba(0,0,0,0.9)',
               textShadowOffset: { width: 0, height: 1 },
               textShadowRadius: 4,
