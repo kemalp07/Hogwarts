@@ -93,7 +93,7 @@ CREATE TABLE house_point_events (
   house TEXT NOT NULL CHECK (house IN ('gryffindor', 'hufflepuff', 'ravenclaw', 'slytherin')),
   delta INTEGER NOT NULL,
   reason TEXT NOT NULL,
-  source TEXT NOT NULL CHECK (source IN ('player_action', 'missed_class', 'natural_drift', 'event_spike')),
+  source TEXT NOT NULL CHECK (source IN ('player_action', 'missed_class', 'natural_drift', 'event_spike', 'world_event', 'conversation_event')),
   created_at TIMESTAMP DEFAULT NOW()
 );
 

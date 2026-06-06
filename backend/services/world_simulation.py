@@ -100,8 +100,8 @@ def _apply_changes(session_id: str, changes: list):
                 "reason": ch.get("reason", ""),
                 "source": ch.get("source", "world_event"),
             }).execute()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"[{session_id}] house_point_events insert failed: {e}")
     if update:
         try:
             update["session_id"] = session_id
