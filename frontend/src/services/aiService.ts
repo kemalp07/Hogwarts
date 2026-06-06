@@ -146,6 +146,7 @@ export async function sendMessage(
             player_house: sp.player_house,
             week: sp.week,
             day: sp.day,
+            ai_response: assembled,
             player_name: userName,
             player_attraction: playerAttraction,
             conversation: messages.slice(-10).map((m) => ({

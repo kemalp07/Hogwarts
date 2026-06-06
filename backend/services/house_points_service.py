@@ -183,7 +183,7 @@ def get_message_count(session_id: str) -> int:
 
 
 def increment_message_count(session_id: str) -> int:
-    """Mesaj sayacını artır. 8'in katına gelince 1 saat ilerlet."""
+    """Mesaj sayacını artır — artık saat ilerletmiyor."""
     if not supabase:
         return 0
     try:
@@ -193,11 +193,6 @@ def increment_message_count(session_id: str) -> int:
             "daily_message_count": count,
             "updated_at": datetime.utcnow().isoformat(),
         }, on_conflict="session_id").execute()
-
-        if count % 8 == 0:
-            advance_hour(session_id, 1)
-            logger.info(f"[{session_id}] Time advanced — message count: {count}")
-
         return count
     except Exception as e:
         logger.error(f"increment_message_count error: {e}")

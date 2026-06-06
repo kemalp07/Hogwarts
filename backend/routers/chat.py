@@ -23,7 +23,7 @@ from ..services.house_points_service import (
     get_missed_classes_for_prompt,
     build_missed_class_context,
 )
-from ..services.world_simulation import run_point_simulation
+from ..services.world_simulation import run_point_simulation, extract_time_from_response
 from ..services.relationship_service import analyze_relationship_changes, build_relationship_context
 from ..db.supabase_client import insert_message, supabase
 import traceback
@@ -338,6 +338,7 @@ async def run_simulation_endpoint(request: Request):
     day = int(body.get("day", 1))
     conversation = body.get("conversation", [])
     player_attraction = body.get("player_attraction", "Her ikisi")
+    ai_response = body.get("ai_response", "")
 
     if not session_id:
         return JSONResponse(content={"status": "error", "detail": "session_id required"})
@@ -349,6 +350,12 @@ async def run_simulation_endpoint(request: Request):
         logger.info(f"[{session_id}] Simulation complete")
     except Exception as e:
         logger.error(f"Simulation error: {e}", exc_info=True)
+
+    if ai_response:
+        try:
+            await extract_time_from_response(session_id, ai_response)
+        except Exception as e:
+            logger.error(f"extract_time_from_response error: {e}")
 
     try:
         await analyze_relationship_changes(

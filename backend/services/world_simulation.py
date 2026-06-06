@@ -330,6 +330,42 @@ SADECE JSON döndür:
     return results
 
 
+async def extract_time_from_response(session_id: str, ai_response: str):
+    """
+    AI yanıtından saat bilgisini çıkar, game_state'i güncelle.
+    """
+    if not ai_response:
+        return
+
+    prompt = f"""Aşağıdaki Hogwarts roleplay yanıtında saat bilgisi var mı?
+Varsa sadece saat sayısını döndür (0-23 arası tam sayı).
+Yoksa null döndür.
+
+YANIT:
+{ai_response[:500]}
+
+SADECE JSON: {{"hour": 10}} veya {{"hour": null}}"""
+
+    text = await _call_vertex(prompt, max_tokens=20, temperature=0.0)
+    if not text:
+        return
+
+    try:
+        clean = text.strip().replace("```json", "").replace("```", "")
+        data = json.loads(clean)
+        hour = data.get("hour")
+        if hour is not None and isinstance(hour, int) and 0 <= hour <= 23:
+            if supabase:
+                supabase.table("game_state").upsert({
+                    "session_id": session_id,
+                    "current_hour": hour,
+                    "updated_at": datetime.utcnow().isoformat(),
+                }, on_conflict="session_id").execute()
+                logger.info(f"[{session_id}] Time updated from AI response: {hour}:00")
+    except Exception as e:
+        logger.error(f"extract_time_from_response error: {e}")
+
+
 async def run_point_simulation(
     session_id: str,
     conversation: list,
