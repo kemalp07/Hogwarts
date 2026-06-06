@@ -753,6 +753,8 @@ const {
         ]);
       }
       setTimeout(() => fetchHousePoints(), 2000);
+      setTimeout(() => fetchHousePoints(), 5000);
+      setTimeout(() => fetchHousePoints(), 10000);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -810,6 +812,8 @@ const {
         ]);
       }
       setTimeout(() => fetchHousePoints(), 2000);
+      setTimeout(() => fetchHousePoints(), 5000);
+      setTimeout(() => fetchHousePoints(), 10000);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([

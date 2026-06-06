@@ -2,22 +2,29 @@ import asyncio
 import sys
 sys.path.insert(0, '.')
 
-from backend.services.world_simulation import _call_vertex, _parse_json, _apply_changes, _get_points
+from backend.services.world_simulation import _call_vertex, _parse_json
 
 async def test():
-    session = '280403d3-a4dc-4daf-9dbd-ff93797ed640'  # gercek session
+    prompt = """Sen Hogwarts'ın gizli günlük kayıt büyücüsüsün. 1991-92 yılı, 1. hafta, Pazartesi.
+
+Bugün Hogwarts'ta yaşanan 2-3 olayı hayal et ve ev puanlarına yansıt.
+
+Kurallar:
+- 4 evin TÜMÜNE değin — gryffindor, hufflepuff, ravenclaw, slytherin hepsine
+- SADECE JSON döndür
+
+Format:
+[
+  {"house": "slytherin", "delta": 8, "reason": "...", "source": "world_event"},
+  {"house": "hufflepuff", "delta": 5, "reason": "...", "source": "world_event"},
+  {"house": "ravenclaw", "delta": -3, "reason": "...", "source": "world_event"},
+  {"house": "gryffindor", "delta": 4, "reason": "...", "source": "world_event"}
+]"""
     
-    print("Before:", _get_points(session))
-    
-    changes = [
-        {"house": "hufflepuff", "delta": 10, "reason": "test hufflepuff", "source": "world_event"},
-        {"house": "slytherin", "delta": 8, "reason": "test slytherin", "source": "world_event"},
-        {"house": "ravenclaw", "delta": 6, "reason": "test ravenclaw", "source": "world_event"},
-    ]
-    
-    print("Applying changes:", changes)
-    _apply_changes(session, changes)
-    
-    print("After:", _get_points(session))
+    text = await _call_vertex(prompt, max_tokens=300, temperature=0.85)
+    print("Raw:", repr(text))
+    parsed = _parse_json(text)
+    print("Parsed:", parsed)
+    print("Houses in result:", [p['house'] for p in parsed])
 
 asyncio.run(test())

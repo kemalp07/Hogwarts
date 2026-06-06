@@ -188,10 +188,12 @@ Kurallar:
 - Slytherin koridorda kavga çıkardı gibi. Hiçbir ev 0'da kalmasın.
 - SADECE JSON döndür
 
-Format:
+Format (4 evin TÜMÜ dahil olmalı, eksik ev kabul edilmez):
 [
-  {{"house": "slytherin", "delta": 8, "reason": "Potions sınavında en yüksek not Slytherin'de", "source": "world_event"}},
-  {{"house": "gryffindor", "delta": -5, "reason": "Fred ve George koridorda patlayan şeker kullandı", "source": "world_event"}}
+  {{"house": "slytherin", "delta": 10, "reason": "Draco iksir dersinde başarılı oldu", "source": "world_event"}},
+  {{"house": "hufflepuff", "delta": 5, "reason": "Hufflepuff bahçe dersinde övgü aldı", "source": "world_event"}},
+  {{"house": "ravenclaw", "delta": -3, "reason": "Ravenclaw öğrencisi yasaklı kitap okurken yakalandı", "source": "world_event"}},
+  {{"house": "gryffindor", "delta": -2, "reason": "Fred ve George yemek salonunda şaka yaptı", "source": "world_event"}}
 ]"""
 
     text = await _call_vertex(prompt, max_tokens=250, temperature=0.85)
