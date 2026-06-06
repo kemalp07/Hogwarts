@@ -1424,21 +1424,21 @@ const styles = StyleSheet.create({
   },
   aiSpeakerText: {
     fontWeight: '700',
-    color: '#FB923C',
+    color: 'rgba(255,255,255,0.85)',
     lineHeight: 22,
   },
   aiDialogueText: {
-    color: '#F59E0B',
+    color: '#e8b86d',
     fontStyle: 'italic',
     lineHeight: 22,
   },
   aiPlainText: {
-    color: '#F5F0E8',
+    color: 'rgba(255,255,255,0.85)',
     lineHeight: 22,
   },
   aiItalicText: {
     fontStyle: 'italic',
-    color: '#D4B896',
+    color: 'rgba(255,255,255,0.85)',
     lineHeight: 22,
   },
   houseSelectionArea: {
