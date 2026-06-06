@@ -364,9 +364,9 @@ async def run_simulation_endpoint(request: Request):
                 advance_hour(session_id, hours=1)
             # Sonra AI tag'i varsa override et (büyük atlamalar için)
             await extract_time_from_response(session_id, ai_response)
-            # Her 5 mesajda bir episodic memory kaydet
+            # Her 3 mesajda bir episodic memory kaydet
             msg_count = get_message_count(session_id)
-            if msg_count > 0 and msg_count % 5 == 0:
+            if msg_count > 0 and msg_count % 3 == 0:
                 try:
                     recent_for_memory = conversation[-10:]
                     episodic_summary = await generate_summary(recent_for_memory)

@@ -16,7 +16,7 @@ load_dotenv(PROJECT_ROOT / ".env", override=True)
 
 logger = logging.getLogger(__name__)
 
-SUMMARY_TRIGGER_TURNS = 10
+SUMMARY_TRIGGER_TURNS = 6
 
 
 def _normalize_memory_owner_id(session_id: str) -> str:

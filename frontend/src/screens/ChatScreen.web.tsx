@@ -240,9 +240,9 @@ function BubbleInlineActions({
   }, [open]);
 
   return (
-    <View style={{ position: 'absolute', top: -2, right: 8, zIndex: 20 }}>
+    <View style={{ position: 'absolute', top: 2, right: 12, zIndex: 20 }}>
       <Pressable onPress={() => setOpen((o) => !o)}>
-        <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, letterSpacing: 2 }}>•••</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 16, lineHeight: 16 }}>⋮</Text>
       </Pressable>
 
       {open && (
@@ -1093,7 +1093,7 @@ const {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
 
-  const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
+  const canSend = useMemo(() => !isLoading, [isLoading]);
 
   useEffect(() => {
     if (!activeCharacter) return;
@@ -1189,11 +1189,14 @@ const {
   const handleSend = async () => {
     const trimmed = inputText.trim();
 
-    if (!trimmed || isLoading) {
+    if (isLoading) {
       return;
     }
 
-    const nextMessages = [...messages, createMessage('user', trimmed)];
+    const nextMessages = trimmed
+      ? [...messages, createMessage('user', trimmed)]
+      : [...messages];
+
     setMessages(nextMessages);
     setInputText('');
     setInputHeight(MIN_INPUT_HEIGHT);

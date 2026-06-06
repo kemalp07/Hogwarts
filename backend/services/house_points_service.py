@@ -148,14 +148,22 @@ def apply_special_event_spike(session_id: str, week: int, day: int):
 
 
 def get_todays_schedule(week: int, day: int) -> list:
-    """O günün ders listesini döner. Haftalık tekrar eden program kullanır."""
     cal = _load_calendar()
     weekly = cal.get("weekly_schedule", {})
-    if weekly:
-        return weekly.get(str(day), [])
-    for w in cal.get("weeks", []):
-        if w["week"] == week:
-            return w["days"].get(str(day), [])
+
+    # Yapı: {day_str: [...]} — haftadan bağımsız, gün bazlı
+    day_str = str(day)
+    day_schedule = weekly.get(day_str)
+
+    if isinstance(day_schedule, list):
+        return day_schedule
+
+    # Alternatif yapı: {week_str: {day_str: [...]}}
+    if isinstance(day_schedule, dict):
+        week_str = str(week)
+        result = day_schedule.get(week_str, [])
+        return result if isinstance(result, list) else []
+
     return []
 
 

@@ -41,7 +41,7 @@ export async function sendMessage(
       }));
 
     const payload = {
-      message: history[history.length - 1]?.content || '',
+      message: history[history.length - 1]?.content || '...',
       user_name: userName,
       character_id: 'hogwarts-narrator',
       location_id: 'great-hall',
