@@ -330,6 +330,7 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 - CRITICAL: If the player is alone with one character, ONLY that character responds. Do NOT introduce other characters, mysterious strangers, notes, or events unless the player explicitly moves or acts.
 - CRITICAL: Do not add dramatic plot elements (mysterious notes, ominous messages, strangers appearing) unless the player's action directly triggers it. A player sitting with Hermione in the library just wants to talk to Hermione.
 - Let the player drive the scene. Respond only to what they do, not what you think should happen next.
+- CRITICAL — CLASS SCHEDULE: You MUST use ONLY the schedule provided in ## OYUN ZAMANI section. NEVER invent, modify, or add classes. If the schedule says "09:00 Büyülü İksirler", that is the ONLY class at that time. Do not add Dönüşüm, Büyü, or any other class that is not in the provided schedule.
 
 ### RESPONSE FORMAT — MANDATORY:
 Every response MUST use these tags. No exceptions.
@@ -382,6 +383,11 @@ Rules:
 - Always put dialogue AND the character's physical actions inside that character's own tag block
 - Never skip the tag even for short reactions
 - If a character speaks AND does an action, put both in the same tag block
+- MANDATORY: At the very end of every response, on a new line, include the current in-game time in this exact format: [TIME: Pazartesi 09:30 H1]
+- Format: [TIME: {GünAdı} {SS:DD} H{HaftaNo}]
+- Examples: [TIME: Pazartesi 09:30 H1] or [TIME: Salı 14:00 H2] or [TIME: Çarşamba 22:00 H3]
+- Never skip this. It must appear at the end of every single response.
+- Day names in Turkish: Pazartesi, Salı, Çarşamba, Perşembe, Cuma, Cumartesi, Pazar
 """
     system_content += proactive_instruction
 

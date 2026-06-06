@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import random
+import re
 import threading
 from datetime import datetime
 from pathlib import Path
@@ -332,36 +333,40 @@ SADECE JSON döndür:
 
 async def extract_time_from_response(session_id: str, ai_response: str):
     """
-    AI yanıtından saat bilgisini çıkar, game_state'i güncelle.
+    AI yanıtındaki [TIME: Pazartesi 09:30 H2] tag'ini parse et.
+    game_state'i güncelle.
     """
     if not ai_response:
         return
 
-    prompt = f"""Aşağıdaki Hogwarts roleplay yanıtında saat bilgisi var mı?
-Varsa sadece saat sayısını döndür (0-23 arası tam sayı).
-Yoksa null döndür.
+    pattern = r'\[TIME:\s*(Pazartesi|Salı|Çarşamba|Perşembe|Cuma|Cumartesi|Pazar)\s+(\d{1,2}):(\d{2})\s+H(\d+)\]'
+    match = re.search(pattern, ai_response, re.IGNORECASE)
 
-YANIT:
-{ai_response[:500]}
+    if not match:
+        return
 
-SADECE JSON: {{"hour": 10}} veya {{"hour": null}}"""
+    day_name = match.group(1).strip()
+    hour = int(match.group(2))
+    week = int(match.group(4))
 
-    text = await _call_vertex(prompt, max_tokens=20, temperature=0.0)
-    if not text:
+    day_map = {
+        "pazartesi": 1, "salı": 2, "çarşamba": 3,
+        "perşembe": 4, "cuma": 5, "cumartesi": 6, "pazar": 7
+    }
+    day = day_map.get(day_name.lower(), 1)
+
+    if not supabase:
         return
 
     try:
-        clean = text.strip().replace("```json", "").replace("```", "")
-        data = json.loads(clean)
-        hour = data.get("hour")
-        if hour is not None and isinstance(hour, int) and 0 <= hour <= 23:
-            if supabase:
-                supabase.table("game_state").upsert({
-                    "session_id": session_id,
-                    "current_hour": hour,
-                    "updated_at": datetime.utcnow().isoformat(),
-                }, on_conflict="session_id").execute()
-                logger.info(f"[{session_id}] Time updated from AI response: {hour}:00")
+        supabase.table("game_state").upsert({
+            "session_id": session_id,
+            "current_week": week,
+            "current_day": day,
+            "current_hour": hour,
+            "updated_at": datetime.utcnow().isoformat(),
+        }, on_conflict="session_id").execute()
+        logger.info(f"[{session_id}] Time from AI: {day_name} {hour:02d}:00 W{week}")
     except Exception as e:
         logger.error(f"extract_time_from_response error: {e}")
 

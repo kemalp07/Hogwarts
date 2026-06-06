@@ -229,6 +229,9 @@ function parseTaggedResponse(text: string): Array<{ tag: string; name: string; c
   };
 
   for (const line of lines) {
+    if (/^\[TIME:[^\]]+\]/i.test(line.trim())) {
+      continue;
+    }
     const tagMatch = line.match(/^\[([^\]]+)\]\s*(.*)/);
     if (tagMatch) {
       pushBlock();
@@ -243,7 +246,8 @@ function parseTaggedResponse(text: string): Array<{ tag: string; name: string; c
   return blocks;
 }
 
-const cleanContent = (text: string) => text.replace(/<[^>]*>/g, '').trim();
+const cleanContent = (text: string) =>
+  text.replace(/\[TIME:[^\]]+\]/gi, '').replace(/<[^>]*>/g, '').trim();
 
 function parseAIMessage(text: string): React.ReactNode {
   const cleanedText = cleanContent(text);
@@ -739,6 +743,7 @@ const {
   activeCharacter,
   characters,
   setCharacters,
+  setActiveCharacter,
   sessionId,
   messages,
   setMessages,
@@ -764,19 +769,21 @@ const {
     secretTrait: activeCharacter.secretTrait,
   } : null;
 
-  const setHogwartsHouse = (house: string) => {
-    if (!activeCharacter) return;
-    const updatedCharacters = characters.map(c =>
-      c.id === activeCharacter.id ? { ...c, house } : c
-    );
-    setCharacters(updatedCharacters);
-  };
-
   // House points animation state
   const prevHousePoints = useRef({ gryffindor: 0, hufflepuff: 0, ravenclaw: 0, slytherin: 0 });
   const [displayPoints, setDisplayPoints] = useState({ gryffindor: 0, hufflepuff: 0, ravenclaw: 0, slytherin: 0 });
   const [playerHouse, setPlayerHouse] = useState<string>('gryffindor');
   const animationRefs = useRef<Record<string, any>>({});
+
+  const setHogwartsHouse = (house: string) => {
+    if (!activeCharacter) return;
+    const updatedChar = { ...activeCharacter, house };
+    setActiveCharacter(updatedChar);
+    setCharacters(characters.map(c =>
+      c.id === activeCharacter.id ? { ...c, house } : c
+    ));
+    setPlayerHouse(house.toLowerCase());
+  };
 
   const animatePointChange = (house: string, from: number, to: number) => {
     if (animationRefs.current[house]) {
@@ -813,6 +820,12 @@ const {
       setPlayerHouse(gameState.playerHouse);
     }
   }, [gameState]);
+
+  useEffect(() => {
+    if (activeCharacter?.house) {
+      setPlayerHouse(activeCharacter.house.toLowerCase());
+    }
+  }, [activeCharacter]);
 
   // Redirect to onboarding if no active character
   useEffect(() => {
@@ -988,6 +1001,7 @@ const {
 
   const handleHouseSelect = async (house: string) => {
     setHogwartsHouse(house);
+    setPlayerHouse(house.toLowerCase());
     setShowHouseSelection(false);
 
     // Call backend to set player house
@@ -1056,6 +1070,9 @@ const {
       if (!res.ok) return;
       const data = await res.json();
       if (data.points) setHousePoints(data.points);
+      if (data.game_state?.player_house) {
+        setPlayerHouse(data.game_state.player_house);
+      }
     } catch {}
   };
 
@@ -1100,7 +1117,7 @@ const {
             <HousePointsPanel
               displayPoints={displayPoints}
               housePoints={housePoints}
-              playerHouse={hogwartsHouse}
+              playerHouse={playerHouse}
               side="left"
               headerHeight={64}
             />
@@ -1109,7 +1126,7 @@ const {
             <HousePointsPanel
               displayPoints={displayPoints}
               housePoints={housePoints}
-              playerHouse={hogwartsHouse}
+              playerHouse={playerHouse}
               side="right"
               headerHeight={64}
             />
@@ -1123,7 +1140,7 @@ const {
               ref={flatListRef}
               data={messages}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (item.role === 'ai' ? renderAIMessage(item) : <MessageBubble item={item} hogwartsHouse={hogwartsHouse} />)}
+              renderItem={({ item }) => (item.role === 'ai' ? renderAIMessage(item) : <MessageBubble item={item} hogwartsHouse={hogwartsHouse || playerHouse} />)}
               onContentSizeChange={() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
               }}

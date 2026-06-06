@@ -396,6 +396,12 @@ def build_current_time_context(session_id: str) -> str:
             missed_classes.append(cls)
 
     lines = [f"## OYUN ZAMANI: {day_name}, Saat {hour:02d}:00, {week}. Hafta"]
+    lines.append("BUGÜNÜN RESMİ PROGRAMI — SADECE BUNLARI KULLAN, KENDİ EKLEME YAPMA:")
+    for cls in schedule:
+        teacher = cls.get("teacher", "")
+        lines.append(f"  {cls['time']}: {cls['subject']}" + (f" ({teacher})" if teacher else ""))
+    if not schedule:
+        lines.append("  Bugün ders yok.")
 
     if current_class:
         lines.append(
@@ -410,9 +416,6 @@ def build_current_time_context(session_id: str) -> str:
     if missed_classes and hour > 9:
         missed_names = [c["subject"] for c in missed_classes]
         lines.append(f"KAÇIRILAN DERSLER: {', '.join(missed_names)} — öğretmenler bunu hatırlıyor")
-
-    if not schedule:
-        lines.append("Bugün ders yok — serbest zaman.")
 
     return "\n".join(lines)
 
