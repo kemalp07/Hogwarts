@@ -8,7 +8,6 @@ Hogwarts Dünya Simülasyonu
 import json
 import logging
 import os
-import random
 from datetime import datetime
 from pathlib import Path
 
@@ -150,9 +149,9 @@ Kurallar:
 - Oyuncu iyi/cesur/akıllı davrandıysa kendi evine +puan
 - Kural ihlali, saygısızlık, ders kaçırma varsa -puan
 - Hiçbir olay yoksa boş liste döndür
-- Her delta max ±15
-- CRITICAL: If a teacher explicitly stated an exact number (e.g. "twenty points from Gryffindor", "yirmi puan gidiyor"), you MUST use that EXACT number as the delta. Do not reduce or round it.
-- Examples: "yirmi puan" → delta: -20, "beş puan" → delta: -5, "on puan" → delta: 10
+- KRİTİK: Eğer bir öğretmen sohbette açıkça belirli bir sayı söylediyse (örn. "yirmi puan gidiyor", "Gryffindor'dan beş puan"), o EXACT sayıyı delta olarak kullan. Azaltma yapma, yuvarlama yapma.
+- Örnekler: "yirmi puan" → delta: -20, "beş puan" → delta: -5, "on puan" → delta: 10
+- Açıkça söylenmiş bir sayı yoksa max ±15 uygula
 - SADECE JSON döndür, başka hiçbir şey yazma
 
 Format:
@@ -169,9 +168,6 @@ Değişim yoksa: []"""
 
 async def simulate_world_events(session_id: str, week: int, day: int):
     """Sohbetten bağımsız, o günkü Hogwarts olaylarını simüle et."""
-    # %90 ihtimalle çalış — her yanıtta dünya değişmesin
-    if random.random() > 0.1:
-        return
 
     day_names = {1: "Pazartesi", 2: "Salı", 3: "Çarşamba", 4: "Perşembe",
                  5: "Cuma", 6: "Cumartesi", 7: "Pazar"}

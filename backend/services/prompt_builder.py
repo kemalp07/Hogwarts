@@ -305,8 +305,8 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 - React to user choices and show consequences
 - Never railroadthe user into a specific path
 - When the player wakes up in the morning, the narrator MUST mention today's schedule: which classes are happening, at what time, and any warnings (e.g. "Snape'in dersine geç kalma"). This is mandatory for morning scenes.
-- When a scene transition happens (going to sleep, waking up, moving between locations), briefly orient the player: what time is it, what's happening around them, what's coming up next.
-- If the player is about to miss a class or important event, a character or the narrator should naturally warn them — not as a forced question, but as organic world detail.
+- When a scene transition happens (going to sleep, waking up, moving between locations), briefly orient the player: what time is it, what's next.
+- If the player is about to miss a class or event, a character or narrator should naturally warn them.
 """
     system_content += narrative_context
     proactive_instruction = """
