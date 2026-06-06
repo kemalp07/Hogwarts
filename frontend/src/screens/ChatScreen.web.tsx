@@ -149,6 +149,7 @@ function createMessage(role: 'user' | 'ai', text: string, characterName?: string
     role,
     text,
     characterName,
+    timestamp: Date.now(),
   };
 }
 
@@ -185,18 +186,80 @@ function TypingBubble() {
   return <TypingIndicator />;
 }
 
-type MessageBubbleProps = {
+type MessageEditProps = {
   item: Message;
-  hogwartsHouse: string;
   sessionId: string;
   editingId: string | null;
   editText: string;
-  menuId: string | null;
   setEditText: (text: string) => void;
   setEditingId: (id: string | null) => void;
-  setMenuId: (id: string | null) => void;
   setMessages: (msgs: Message[] | ((prev: Message[]) => Message[])) => void;
 };
+
+type MessageBubbleProps = MessageEditProps & {
+  hogwartsHouse: string;
+};
+
+async function deleteMessageItem(
+  sessionId: string,
+  item: Message,
+  role: 'user' | 'assistant',
+  setMessages: MessageEditProps['setMessages'],
+) {
+  setMessages((prev) => prev.filter((m) => m.id !== item.id));
+
+  try {
+    await fetch('http://localhost:8001/api/delete-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionId,
+        content: item.text,
+        role,
+      }),
+    });
+  } catch {
+    // Frontend already updated; backend sync is best-effort.
+  }
+}
+
+function BubbleInlineActions({
+  onEdit,
+  onDelete,
+}: {
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <View style={styles.bubbleInlineActions}>
+      <Pressable onPress={onEdit}>
+        <Text style={styles.bubbleInlineEdit}>✏</Text>
+      </Pressable>
+      <Pressable onPress={onDelete}>
+        <Text style={styles.bubbleInlineDelete}>✕</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function EditMessageActions({
+  onSave,
+  onCancel,
+}: {
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <View style={styles.userMessageActions}>
+      <Pressable onPress={onSave}>
+        <Text style={styles.userActionSave}>Kaydet</Text>
+      </Pressable>
+      <Pressable onPress={onCancel}>
+        <Text style={styles.userActionCancel}>İptal</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 function getCharacterAvatarSource(characterName?: string) {
   if (!characterName) {
@@ -343,10 +406,57 @@ function parseAIMessage(text: string): React.ReactNode {
   );
 }
 
-function renderAIMessage(item: Message) {
-  const taggedBlocks = parseTaggedResponse(item.text);
+const isErrorMessage = (text: string) =>
+  text.includes('Vertex AI HTTP 429') ||
+  text.includes('RESOURCE_EXHAUSTED') ||
+  text.includes('Resource exhausted') ||
+  text.includes('Failed to fetch');
 
-  // Aynı karakterin ardışık bloklarını birleştir
+function AIMessageBubble({
+  item,
+  sessionId,
+  editingId,
+  editText,
+  setEditText,
+  setEditingId,
+  setMessages,
+}: MessageEditProps) {
+  if (isErrorMessage(item.text)) {
+    return (
+      <View style={styles.aiBlockRow}>
+        <Text style={styles.aiErrorFallback}>
+          ⏳ Hogwarts büyüleri yüklenirken bir aksaklık yaşandı. Lütfen tekrar dene...
+        </Text>
+      </View>
+    );
+  }
+
+  if (editingId === item.id) {
+    return (
+      <View style={styles.aiBlockRow}>
+        <View style={styles.aiBlockBody}>
+          <TextInput
+            value={editText}
+            onChangeText={setEditText}
+            style={[styles.aiBubble, styles.aiEditInput]}
+            autoFocus
+            multiline
+          />
+          <EditMessageActions
+            onSave={() => {
+              setMessages((prev) =>
+                prev.map((m) => (m.id === item.id ? { ...m, text: editText } : m)),
+              );
+              setEditingId(null);
+            }}
+            onCancel={() => setEditingId(null)}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  const taggedBlocks = parseTaggedResponse(item.text);
   const mergedBlocks = taggedBlocks.reduce((acc: typeof taggedBlocks, block) => {
     const last = acc[acc.length - 1];
     if (last && last.tag === block.tag) {
@@ -356,6 +466,14 @@ function renderAIMessage(item: Message) {
     acc.push({ ...block, content: cleanContent(block.content) });
     return acc;
   }, []);
+
+  const startEdit = () => {
+    setEditText(item.text);
+    setEditingId(item.id);
+  };
+
+  const handleDelete = () =>
+    deleteMessageItem(sessionId, item, 'assistant', setMessages);
 
   return (
     <>
@@ -368,7 +486,10 @@ function renderAIMessage(item: Message) {
             <View style={styles.aiBlockBody}>
               <Text style={styles.aiBlockName}>{block.name}</Text>
               <View style={styles.aiBubble}>
-                <View style={styles.aiMessageRoot}>{parseAIMessage(cleanContent(block.content))}</View>
+                <BubbleInlineActions onEdit={startEdit} onDelete={handleDelete} />
+                <View style={styles.aiMessageRoot}>
+                  {parseAIMessage(cleanContent(block.content))}
+                </View>
               </View>
             </View>
           </View>
@@ -384,13 +505,19 @@ function MessageBubble({
   sessionId,
   editingId,
   editText,
-  menuId,
   setEditText,
   setEditingId,
-  setMenuId,
   setMessages,
 }: MessageBubbleProps) {
   const bubbleColor = houseColor(hogwartsHouse);
+
+  const startEdit = () => {
+    setEditText(item.text);
+    setEditingId(item.id);
+  };
+
+  const handleDelete = () =>
+    deleteMessageItem(sessionId, item, 'user', setMessages);
 
   if (editingId === item.id) {
     return (
@@ -402,71 +529,28 @@ function MessageBubble({
           autoFocus
           multiline
         />
-        <View style={styles.userMessageActions}>
-          <Pressable
-            onPress={() => {
-              setMessages((prev) =>
-                prev.map((m) => (m.id === item.id ? { ...m, text: editText } : m)),
-              );
-              setEditingId(null);
-            }}
-          >
-            <Text style={styles.userActionSave}>Kaydet</Text>
-          </Pressable>
-          <Pressable onPress={() => setEditingId(null)}>
-            <Text style={styles.userActionCancel}>İptal</Text>
-          </Pressable>
-        </View>
+        <EditMessageActions
+          onSave={() => {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === item.id ? { ...m, text: editText } : m)),
+            );
+            setEditingId(null);
+          }}
+          onCancel={() => setEditingId(null)}
+        />
       </View>
     );
   }
 
   return (
-    <Pressable
-      onLongPress={() => setMenuId(item.id)}
-      onPress={() => setMenuId(null)}
-    >
-      <View style={styles.userRow}>
-        <View style={[styles.userBubble, { backgroundColor: bubbleColor }]}>
-          <Text style={[styles.messageText, styles.userMessageText]}>{item.text}</Text>
-        </View>
-        {menuId === item.id && (
-          <View style={styles.userMessageMenu}>
-            <Pressable
-              onPress={() => {
-                setEditText(item.text);
-                setEditingId(item.id);
-                setMenuId(null);
-              }}
-            >
-              <Text style={styles.userActionEdit}>✏️ Düzenle</Text>
-            </Pressable>
-            <Pressable
-              onPress={async () => {
-                setMessages((prev) => prev.filter((m) => m.id !== item.id));
-                setMenuId(null);
-
-                try {
-                  await fetch('http://localhost:8001/api/delete-message', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      session_id: sessionId,
-                      content: item.text,
-                      role: 'user',
-                    }),
-                  });
-                } catch {
-                  // Frontend already updated; backend sync is best-effort.
-                }
-              }}
-            >
-              <Text style={styles.userActionDelete}>🗑️ Sil</Text>
-            </Pressable>
-          </View>
-        )}
+    <View style={styles.userRow}>
+      <View style={[styles.userBubble, { backgroundColor: bubbleColor }]}>
+        <BubbleInlineActions onEdit={startEdit} onDelete={handleDelete} />
+        <Text style={[styles.messageText, styles.userMessageText]}>
+          {item.text}
+        </Text>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -940,7 +1024,6 @@ const {
   const [showSchedule, setShowSchedule] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
-  const [menuId, setMenuId] = useState<string | null>(null);
 
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
 
@@ -984,7 +1067,7 @@ const {
           role: m.role === 'user' ? 'user' : 'ai',
           text: m.content,
           characterName: m.character_name || undefined,
-          tag: m.tag || undefined,
+          timestamp: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
         }));
 
         setMessages(loaded);
@@ -1231,7 +1314,15 @@ const {
               keyExtractor={(item) => item.id}
               renderItem={({ item }) =>
                 item.role === 'ai' ? (
-                  renderAIMessage(item)
+                  <AIMessageBubble
+                    item={item}
+                    sessionId={sessionId}
+                    editingId={editingId}
+                    editText={editText}
+                    setEditText={setEditText}
+                    setEditingId={setEditingId}
+                    setMessages={setMessages}
+                  />
                 ) : (
                   <MessageBubble
                     item={item}
@@ -1239,10 +1330,8 @@ const {
                     sessionId={sessionId}
                     editingId={editingId}
                     editText={editText}
-                    menuId={menuId}
                     setEditText={setEditText}
                     setEditingId={setEditingId}
-                    setMenuId={setMenuId}
                     setMessages={setMessages}
                   />
                 )
@@ -1427,9 +1516,23 @@ const styles = StyleSheet.create({
   },
   userRow: {
     width: '100%',
-    maxWidth: 900,
-    alignSelf: 'center',
     alignItems: 'flex-end',
+  },
+  bubbleInlineActions: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    flexDirection: 'row',
+    gap: 4,
+    zIndex: 10,
+  },
+  bubbleInlineEdit: {
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 9,
+  },
+  bubbleInlineDelete: {
+    color: 'rgba(255,255,255,0.25)',
+    fontSize: 9,
   },
   userBubble: {
     borderTopLeftRadius: 14,
@@ -1438,9 +1541,11 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    maxWidth: '72%',
     flexShrink: 1,
+    maxWidth: '72%',
+    alignSelf: 'flex-end',
     marginRight: 16,
+    position: 'relative',
   },
   userEditInput: {
     minWidth: 120,
@@ -1453,14 +1558,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
     alignSelf: 'flex-end',
   },
-  userMessageMenu: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-    marginRight: 16,
-    justifyContent: 'flex-end',
-    alignSelf: 'flex-end',
-  },
   userActionSave: {
     color: '#c9a84c',
     fontSize: 13,
@@ -1468,14 +1565,6 @@ const styles = StyleSheet.create({
   userActionCancel: {
     color: 'rgba(255,255,255,0.4)',
     fontSize: 13,
-  },
-  userActionEdit: {
-    color: '#c9a84c',
-    fontSize: 12,
-  },
-  userActionDelete: {
-    color: '#e87a7a',
-    fontSize: 12,
   },
   aiRow: {
     width: '100%',
@@ -1502,6 +1591,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  aiErrorFallback: {
+    color: 'rgba(255,255,255,0.3)',
+    fontStyle: 'italic',
+    fontSize: 12,
+    padding: 8,
   },
   aiBlockAvatar: {
     width: 56,
@@ -1558,6 +1653,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     maxWidth: '100%',
     flex: 1,
+    position: 'relative',
+  },
+  aiEditInput: {
+    color: '#fff',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    width: '100%',
   },
   messageText: {
     fontSize: 14,

@@ -5,6 +5,7 @@ export type Message = {
   role: 'user' | 'ai';
   text: string;
   characterName?: string;
+  timestamp?: number;
 };
 
 export type Character = {
