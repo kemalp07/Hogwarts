@@ -382,6 +382,7 @@ const INPUT_TIPS = [
   '🧙 Bir karakteri çağır: Snape\'e bir soru sor',
   '📖 Sahneyi yönlendir: Kütüphaneye gitmek istiyorum',
   '🔮 Duygu belirt: Biraz tedirgin hissediyorum',
+  '📖 Hikayeye devam etmek için sadece "devam et" yaz',
 ];
 
 const HOUSE_CONFIG: Record<string, { label: string; short: string; color: string; logoKey: string }> = {
@@ -943,7 +944,7 @@ const {
                     onSubmitEditing={isWeb ? undefined : handleSend}
                     onKeyPress={isWeb ? handleKeyPress : undefined}
                     onContentSizeChange={handleContentSizeChange}
-                    placeholder="Mesaj yaz..."
+                    placeholder="Mesaj yaz... (devam et = hikaye ilerler)"
                     placeholderTextColor="#8B7355"
                     multiline={!isWeb}
                     blurOnSubmit={false}
@@ -1055,12 +1056,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   listContent: {
-    paddingHorizontal: 96,
+    paddingHorizontal: 80,
     paddingTop: 16,
     paddingBottom: 16,
     flexGrow: 1,
     alignItems: 'stretch',
-    maxWidth: 720,
+    maxWidth: 900,
     alignSelf: 'center',
     width: '100%',
   },
@@ -1069,7 +1070,7 @@ const styles = StyleSheet.create({
   },
   userRow: {
     width: '100%',
-    maxWidth: 760,
+    maxWidth: 900,
     alignSelf: 'center',
     alignItems: 'flex-end',
   },
@@ -1082,6 +1083,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     maxWidth: '72%',
     flexShrink: 1,
+    marginRight: 16,
   },
   aiRow: {
     width: '100%',
@@ -1238,7 +1240,7 @@ const styles = StyleSheet.create({
   },
   inputArea: {
     backgroundColor: 'transparent',
-    paddingHorizontal: 40,
+    paddingHorizontal: 80,
     paddingTop: 12,
     paddingBottom: 24,
     alignItems: 'center',
