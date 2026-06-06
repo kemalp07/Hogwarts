@@ -11,7 +11,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { useAppContext, Character } from '../context/AppContext';
+import { useAppContext, Character, loadAllCharactersFromDB } from '../context/AppContext';
 
 type OnboardingScreenProps = {
   navigation: any;
@@ -29,6 +29,18 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
       document.head.appendChild(link);
     }
   }, []);
+
+  useEffect(() => {
+    const loadFromDb = async () => {
+      const saved = localStorage.getItem('hp_characters');
+      if (saved && JSON.parse(saved).length > 0) return;
+      const fromDb = await loadAllCharactersFromDB();
+      if (fromDb.length > 0) {
+        setCharacters(fromDb);
+      }
+    };
+    loadFromDb();
+  }, [setCharacters]);
 
   const handleSelectCharacter = (character: Character) => {
     setActiveCharacter(character);

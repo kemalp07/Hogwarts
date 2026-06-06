@@ -8,7 +8,7 @@ import {
   Platform,
   ImageBackground,
 } from 'react-native';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext, saveCharacterToDB } from '../context/AppContext';
 
 type WandScreenProps = {
   navigation: any;
@@ -54,7 +54,7 @@ export const WandScreen: React.FC<WandScreenProps> = ({ navigation }) => {
 
   const isStepValid = (step: WandStepKey) => selections[step] !== '';
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!activeCharacter) return;
     if (!WAND_STEPS.every((step) => selections[step] !== '')) return;
 
@@ -66,6 +66,7 @@ export const WandScreen: React.FC<WandScreenProps> = ({ navigation }) => {
       prev.map((c) => (c.id === updated.id ? updated : c)),
     );
     setActiveCharacter(updated);
+    await saveCharacterToDB(updated, updated.sessionId);
     navigation.navigate('Chat');
   };
 

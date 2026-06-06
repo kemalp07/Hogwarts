@@ -44,6 +44,74 @@ export type AppContextType = {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const KNOWN_SESSIONS_KEY = 'hp_known_session_ids';
+
+function trackKnownSessionId(sessionId: string) {
+  const ids: string[] = JSON.parse(localStorage.getItem(KNOWN_SESSIONS_KEY) || '[]');
+  if (!ids.includes(sessionId)) {
+    localStorage.setItem(KNOWN_SESSIONS_KEY, JSON.stringify([...ids, sessionId]));
+  }
+}
+
+export function mapDbCharacterToCharacter(row: Record<string, unknown>): Character {
+  return {
+    id: String(row.id || ''),
+    name: String(row.name || ''),
+    gender: String(row.gender || ''),
+    traits: Array.isArray(row.traits) ? row.traits as string[] : [],
+    origin: String(row.origin || ''),
+    height: String(row.height || ''),
+    hairColor: String(row.hair_color || row.hairColor || ''),
+    fear: String(row.fear || ''),
+    hobby: String(row.hobby || ''),
+    secretTrait: String(row.secret_trait || row.secretTrait || ''),
+    house: String(row.player_house || row.house || ''),
+    sessionId: String(row.session_id || row.sessionId || ''),
+    createdAt: String(row.created_at || row.createdAt || new Date().toISOString()),
+    attraction: row.attraction ? String(row.attraction) : undefined,
+    wand: row.wand ? String(row.wand) : undefined,
+  };
+}
+
+export async function saveCharacterToDB(character: Character, sessionId: string) {
+  try {
+    await fetch('http://localhost:8001/api/save-character', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId, character }),
+    });
+    trackKnownSessionId(sessionId);
+  } catch (e) {
+    console.error('saveCharacterToDB error:', e);
+  }
+}
+
+export async function loadCharactersFromDB(sessionId: string): Promise<Character[]> {
+  try {
+    const res = await fetch(
+      `http://localhost:8001/api/load-characters?session_id=${encodeURIComponent(sessionId)}`,
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.characters || []).map(mapDbCharacterToCharacter);
+  } catch (e) {
+    console.error('loadCharactersFromDB error:', e);
+    return [];
+  }
+}
+
+export async function loadAllCharactersFromDB(): Promise<Character[]> {
+  const sessionIds: string[] = JSON.parse(localStorage.getItem(KNOWN_SESSIONS_KEY) || '[]');
+  const merged = new Map<string, Character>();
+  for (const sid of sessionIds) {
+    const chars = await loadCharactersFromDB(sid);
+    for (const c of chars) {
+      merged.set(c.id, c);
+    }
+  }
+  return [...merged.values()];
+}
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [characters, setCharacters] = useState<Character[]>(
     () => {
@@ -70,6 +138,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     localStorage.setItem('hp_characters', JSON.stringify(characters));
   }, [characters]);
+
+  useEffect(() => {
+    const syncFromDb = async () => {
+      const saved = localStorage.getItem('hp_characters');
+      if (saved && JSON.parse(saved).length > 0) return;
+      const fromDb = await loadAllCharactersFromDB();
+      if (fromDb.length > 0) {
+        setCharacters(fromDb);
+      }
+    };
+    syncFromDb();
+  }, []);
 
   useEffect(() => {
     if (activeCharacter) {

@@ -544,3 +544,51 @@ async def set_house_endpoint(request: Request):
     return {"status": "ok", "house": house}
 
 
+@router.post("/save-character")
+async def save_character(request: Request):
+    body = await request.json()
+    session_id = body.get("session_id", "")
+    character = body.get("character", {})
+    if not session_id or not character:
+        raise HTTPException(status_code=400, detail="session_id ve character gerekli")
+
+    if supabase:
+        try:
+            supabase.table("characters").upsert({
+                "id": character.get("id"),
+                "session_id": session_id,
+                "name": character.get("name", ""),
+                "gender": character.get("gender", ""),
+                "traits": character.get("traits", []),
+                "origin": character.get("origin", ""),
+                "height": character.get("height", ""),
+                "hair_color": character.get("hairColor", ""),
+                "fear": character.get("fear", ""),
+                "hobby": character.get("hobby", ""),
+                "secret_trait": character.get("secretTrait", ""),
+                "attraction": character.get("attraction", ""),
+                "wand": character.get("wand", ""),
+                "player_house": character.get("house", ""),
+                "personality": character.get("traits", [" "])[0],
+                "speech_style": "player",
+                "base_prompt": "player_character",
+                "is_active": True,
+            }, on_conflict="id").execute()
+        except Exception as e:
+            logger.error(f"save_character error: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return JSONResponse(content={"status": "ok"})
+
+
+@router.get("/load-characters")
+async def load_characters(session_id: str = Query(...)):
+    if not supabase:
+        return JSONResponse(content={"characters": []})
+    try:
+        resp = supabase.table("characters").select("*").eq("session_id", session_id).eq("base_prompt", "player_character").execute()
+        return JSONResponse(content={"characters": resp.data or []})
+    except Exception as e:
+        logger.error(f"load_characters error: {e}")
+        return JSONResponse(content={"characters": []})
+

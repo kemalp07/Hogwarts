@@ -9,7 +9,7 @@ import {
   ImageBackground,
   TextInput,
 } from 'react-native';
-import { useAppContext, Character } from '../context/AppContext';
+import { useAppContext, Character, saveCharacterToDB } from '../context/AppContext';
 
 type CharacterCreationScreenProps = {
   navigation: any;
@@ -126,7 +126,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!isStepValid('summary')) return;
 
     const newCharacter: Character = {
@@ -148,6 +148,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
 
     setCharacters([...characters, newCharacter]);
     setActiveCharacter(newCharacter);
+    await saveCharacterToDB(newCharacter, newCharacter.sessionId);
     navigation.navigate('Wand');
   };
 
