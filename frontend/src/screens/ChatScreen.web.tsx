@@ -1005,6 +1005,7 @@ const {
     fear: activeCharacter.fear,
     hobby: activeCharacter.hobby,
     secretTrait: activeCharacter.secretTrait,
+    wand: activeCharacter.wand,
   } : null;
 
   // House points animation state

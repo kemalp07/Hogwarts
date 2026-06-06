@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppProvider } from './src/context/AppContext';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { CharacterCreationScreen } from './src/screens/CharacterCreationScreen';
+import { WandScreen } from './src/screens/WandScreen';
 import { ChatScreen } from './src/screens/ChatScreen';
 
 const Stack = createNativeStackNavigator();
@@ -25,6 +26,13 @@ function RootNavigator() {
       <Stack.Screen
         name="CharacterCreation"
         component={CharacterCreationScreen}
+        options={{
+          animation: 'none',
+        }}
+      />
+      <Stack.Screen
+        name="Wand"
+        component={WandScreen}
         options={{
           animation: 'none',
         }}

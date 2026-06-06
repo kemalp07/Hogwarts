@@ -289,6 +289,8 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 - Hobisi: {character_profile.get('hobby', '')}
 - Gizli özellik (sadece sen bil, zamanla hikayede kullan): {character_profile.get('secretTrait', '')}
 """
+        if character_profile.get('wand'):
+            char_desc += f"- Asası: {character_profile.get('wand')}\n"
         system_parts.insert(1, char_desc)
         system_content = "\n\n".join(part for part in system_parts if part).replace("{{user}}", user_name or "Öğrenci")
 

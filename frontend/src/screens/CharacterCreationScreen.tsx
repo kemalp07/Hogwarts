@@ -16,16 +16,8 @@ type CharacterCreationScreenProps = {
 };
 
 const STEPS = [
-  'name',
-  'gender',
-  'traits',
-  'origin',
-  'height',
-  'hairColor',
-  'fear',
-  'hobby',
-  'secretTrait',
-  'attraction',
+  'name', 'gender', 'traits', 'origin', 'height',
+  'hairColor', 'fear', 'hobby', 'secretTrait', 'attraction',
   'summary',
 ] as const;
 
@@ -156,7 +148,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
 
     setCharacters([...characters, newCharacter]);
     setActiveCharacter(newCharacter);
-    navigation.navigate('Chat');
+    navigation.navigate('Wand');
   };
 
   const handleNext = () => {
@@ -302,7 +294,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
                 ]}
                 numberOfLines={1}
               >
-                {isLastStep ? "Hogwarts'a Başla" : 'İleri'}
+                {isLastStep ? 'Asana Geç' : 'İleri'}
               </Text>
             </Pressable>
           </View>

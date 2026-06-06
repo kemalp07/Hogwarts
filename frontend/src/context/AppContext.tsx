@@ -23,6 +23,7 @@ export type Character = {
   sessionId: string;
   createdAt: string;
   attraction?: string;
+  wand?: string;
 };
 
 export type AppContextType = {
