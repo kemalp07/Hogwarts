@@ -1,26 +1,94 @@
 @echo off
-setlocal
+chcp 65001 >nul
+title Hogwarts - Başlatılıyor...
+color 0A
 
-cd /d "%~dp0"
+echo.
+echo  ██╗  ██╗ ██████╗  ██████╗ ██╗    ██╗ █████╗ ██████╗ ████████╗███████╗
+echo  ██║  ██║██╔═══██╗██╔════╝ ██║    ██║██╔══██╗██╔══██╗╚══██╔══╝██╔════╝
+echo  ███████║██║   ██║██║  ███╗██║ █╗ ██║███████║██████╔╝   ██║   ███████╗
+echo  ██╔══██║██║   ██║██║   ██║██║███╗██║██╔══██║██╔══██╗   ██║   ╚════██║
+echo  ██║  ██║╚██████╔╝╚██████╔╝╚███╔███╔╝██║  ██║██║  ██║   ██║   ███████║
+echo  ╚═╝  ╚═╝ ╚═════╝  ╚═════╝  ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
+echo.
+echo                    Buyucu Dunyasina Hosgeldin...
+echo.
 
-if exist ".venv\Scripts\python.exe" (
-  set "PY=.venv\Scripts\python.exe"
+:: ── Python kontrolü ──────────────────────────────────────────────────────────
+echo [1/5] Python kontrol ediliyor...
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Python bulunamadi. Indiriliyor...
+    curl -o python_installer.exe https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe
+    echo Python kuruluyor... (birkaç dakika sürebilir)
+    python_installer.exe /quiet InstallAllUsers=1 PrependPath=1 Include_test=0
+    del python_installer.exe
+    :: PATH'i yenile
+    call refreshenv >nul 2>&1
+    echo Python kuruldu!
 ) else (
-  set "PY=python"
+    echo Python mevcut.
 )
 
-echo [1/3] Backend baslatiliyor...
-start "HP Backend" cmd /k "%PY% -m uvicorn backend.main:app --reload --port 8001"
+:: ── Node.js kontrolü ─────────────────────────────────────────────────────────
+echo [2/5] Node.js kontrol ediliyor...
+node --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Node.js bulunamadi. Indiriliyor...
+    curl -o node_installer.msi https://nodejs.org/dist/v20.11.0/node-v20.11.0-x64.msi
+    echo Node.js kuruluyor...
+    msiexec /i node_installer.msi /quiet /norestart
+    del node_installer.msi
+    echo Node.js kuruldu!
+) else (
+    echo Node.js mevcut.
+)
 
-echo [2/3] Frontend Expo uygulamasi baslatiliyor...
+:: ── Backend bağımlılıkları ───────────────────────────────────────────────────
+echo [3/5] Backend bagimliliklari kontrol ediliyor...
+if not exist ".venv" (
+    echo Sanal ortam olusturuluyor...
+    python -m venv .venv
+    echo Paketler yukleniyor... (ilk kurulum, birkaç dakika surer)
+    .venv\Scripts\pip install -r backend\requirements.txt --quiet
+    echo Backend hazir!
+) else (
+    echo Backend zaten kurulu.
+)
+
+:: ── Frontend bağımlılıkları ──────────────────────────────────────────────────
+echo [4/5] Frontend bagimliliklari kontrol ediliyor...
 if not exist "frontend\node_modules" (
-  pushd frontend
-  call npm install
-  popd
+    echo Paketler yukleniyor... (ilk kurulum, birkaç dakika surer)
+    cd frontend
+    npm install --silent
+    cd ..
+    echo Frontend hazir!
+) else (
+    echo Frontend zaten kurulu.
 )
-start "" /D "%~dp0frontend" cmd /k npm run web
 
-echo [3/3] Tarayici aciliyor...
-start "" "http://localhost:8081"
+:: ── Başlatma ─────────────────────────────────────────────────────────────────
+echo [5/5] Hogwarts baslatiliyor...
+echo.
 
-echo Tamam. Pencereleri kapatana kadar servisler calismaya devam eder.
+:: Backend başlat
+start "Hogwarts Backend" cmd /k ".venv\Scripts\uvicorn backend.main:app --reload --port 8001"
+
+:: 3 saniye bekle
+timeout /t 3 /nobreak >nul
+
+:: Frontend başlat
+start "Hogwarts Frontend" cmd /k "cd frontend && npx serve . -l 5173"
+
+:: 2 saniye bekle
+timeout /t 2 /nobreak >nul
+
+:: Tarayıcıda aç
+start http://localhost:5173
+
+echo.
+echo  Hogwarts acildi! Tarayicinizda http://localhost:5173 adresine gidin.
+echo  Bu pencereyi kapatabilirsiniz.
+echo.
+pause
