@@ -741,6 +741,7 @@ const {
           createMessage('ai', aiResponse.text, aiResponse.characterName),
         ]);
       }
+      setTimeout(() => fetchHousePoints(), 3000);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -797,6 +798,7 @@ const {
           createMessage('ai', response.text, response.characterName),
         ]);
       }
+      setTimeout(() => fetchHousePoints(), 3000);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -817,6 +819,21 @@ const {
       handleSend();
     }
   };
+
+  const fetchHousePoints = async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch(`http://localhost:8001/api/house-points?session_id=${encodeURIComponent(sessionId)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.points) setHousePoints(data.points);
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (!sessionId) return;
+    fetchHousePoints();
+  }, [sessionId]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
