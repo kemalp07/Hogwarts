@@ -18,6 +18,7 @@ from ..services.house_points_service import (
     advance_hour,
     increment_message_count,
     check_sleep_trigger,
+    get_message_count,
     build_current_time_context,
     get_todays_schedule,
     get_missed_classes_for_prompt,
@@ -363,6 +364,16 @@ async def run_simulation_endpoint(request: Request):
                 advance_hour(session_id, hours=1)
             # Sonra AI tag'i varsa override et (büyük atlamalar için)
             await extract_time_from_response(session_id, ai_response)
+            # Her 5 mesajda bir episodic memory kaydet
+            msg_count = get_message_count(session_id)
+            if msg_count > 0 and msg_count % 5 == 0:
+                try:
+                    recent_for_memory = conversation[-10:]
+                    episodic_summary = await generate_summary(recent_for_memory)
+                    if episodic_summary:
+                        await save_memory(session_id, body.get("character_id", "hogwarts-narrator"), episodic_summary)
+                except Exception as e:
+                    logger.error(f"Episodic memory error: {e}")
         except Exception as e:
             logger.error(f"extract_time_from_response error: {e}")
 

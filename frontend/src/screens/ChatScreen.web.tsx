@@ -240,7 +240,7 @@ function BubbleInlineActions({
   }, [open]);
 
   return (
-    <View style={{ position: 'absolute', top: 4, right: 8, zIndex: 20 }}>
+    <View style={{ position: 'absolute', top: -2, right: 8, zIndex: 20 }}>
       <Pressable onPress={() => setOpen((o) => !o)}>
         <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, letterSpacing: 2 }}>•••</Text>
       </Pressable>
@@ -534,6 +534,7 @@ function AIMessageBubble({
     <>
       {mergedBlocks.map((block, index) => {
         const avatarSource = TAG_AVATARS[block.tag] ?? TAG_AVATARS['UNKNOWN'];
+        const isFirstOrLastBlock = index === 0 || index === mergedBlocks.length - 1;
 
         return (
           <View key={`${item.id}-${index}`} style={styles.aiBlockRow}>
@@ -542,7 +543,7 @@ function AIMessageBubble({
               <Text style={styles.aiBlockName}>{block.name}</Text>
               <View style={styles.aiBubble}>
                 <BubbleInlineActions onEdit={startEdit} onDelete={handleDelete} />
-                {scheduleData && (
+                {isFirstOrLastBlock && scheduleData && (
                   <Text style={{
                     color: 'rgba(201,168,76,0.65)',
                     fontSize: 10,

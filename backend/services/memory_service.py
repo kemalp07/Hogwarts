@@ -80,22 +80,35 @@ def _format_conversation(conversation: list[dict]) -> str:
 def _build_summary_prompt(conversation: list[dict]) -> str:
     conversation_text = _format_conversation(conversation)
     return (
-        "Aşağıdaki konuşmayı 2-3 cümleyle özetle. Sadece önemli olayları, "
-        "karakterin kullanıcıya karşı tutumunu ve plot gelişmelerini içer. "
-        f"Türkçe yaz.\n\n{conversation_text}"
+        "Bu Harry Potter roleplay konuşmasından kısa bir episodik hafıza kaydı çıkar.\n"
+        "Türkçe yaz. Maksimum 3 cümle.\n"
+        "Şunları içer: kim ne yaptı, hangi önemli şey oldu, çözümlenmemiş ne var.\n"
+        "Spesifik ol — karakter isimlerini ve olayları net yaz.\n\n"
+        f"{conversation_text}"
     )
 
 
 def _build_rolling_summary_prompt(conversation: list[dict]) -> str:
     conversation_text = _format_conversation(conversation)
     return (
-        "You are a story memory keeper. Compress this conversation into a structured summary covering:\n"
-        "1. Key events that happened\n"
-        "2. Character relationships and how they evolved\n"
-        "3. Important items, locations, spells mentioned\n"
-        "4. The emotional/narrative tone\n"
-        "5. Any unresolved plot threads\n"
-        "Write in past tense, max 400 words. Be specific with names and details.\n\n"
+        "Sen bir Harry Potter roleplay oyununun hafıza sistemisin. "
+        "Aşağıdaki konuşmayı analiz et ve yapılandırılmış bir özet çıkar.\n\n"
+        "ZORUNLU FORMAT — her başlık altında Türkçe yaz:\n\n"
+        "## YAŞANAN OLAYLAR:\n"
+        "- Kemal'in bu bölümde yaptığı önemli eylemler ve sonuçları\n"
+        "- Gerçekleşen dramatik veya önemli sahneler\n\n"
+        "## DEVAM EDEN OLAYLAR (ÇÖZÜMLENMEMIŞ):\n"
+        "- Henüz sonuçlanmamış çatışmalar, görevler, sorular\n"
+        "- Yarım kalan sahneler veya verilen sözler\n\n"
+        "## KARAKTER İLİŞKİLERİ:\n"
+        "- Her önemli karakterin Kemal'e karşı tutumu (olumlu/olumsuz/nötr + sebep)\n"
+        "- Bu bölümde değişen ilişkiler\n\n"
+        "## ÖNEMLI DETAYLAR:\n"
+        "- Kemal'in edindiği eşyalar, öğrendiği büyüler, gittiği yerler\n"
+        "- Öğretmenlerden alınan tepkiler, puan değişimleri\n\n"
+        "## DUYGUSAL TON:\n"
+        "- Bölümün genel havası ve Kemal'in içinde bulunduğu durum\n\n"
+        "Maksimum 500 kelime. İsim ve detaylarda spesifik ol.\n\n"
         f"{conversation_text}"
     )
 
