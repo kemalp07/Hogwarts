@@ -613,21 +613,22 @@ const {
 
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(MIN_INPUT_HEIGHT);
-  const [showHouseSelection, setShowHouseSelection] = useState<boolean>(
-    () => !activeCharacter?.house
-  );
+  const [showHouseSelection, setShowHouseSelection] = useState<boolean>(false);
   const [tipIndex, setTipIndex] = useState(0);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
 
   useEffect(() => {
-    if (activeCharacter?.house) return; // already played, skip
+    if (!activeCharacter) return;
+    if (historyLoaded) return; // history yüklendiyse dokunma
+    if (activeCharacter.house) return; // house varsa skip
+    
     const firstMes = getFirstMessage(0);
     const personalizedMessage = firstMes.replace(/\{\{user\}\}/g, userName || '');
     setMessages([createMessage('ai', personalizedMessage)]);
     setShowHouseSelection(true);
-  }, [setMessages, userName, activeCharacter]);
+  }, [setMessages, userName, activeCharacter, historyLoaded]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -663,6 +664,28 @@ const {
 
         setMessages(loaded);
         setShowHouseSelection(false);
+
+        // Eğer house yoksa ama history varsa — house seçimi gösterme
+        // History varsa oyuncu zaten ev seçmişti demektir
+        if (activeCharacter && !activeCharacter.house) {
+          // game_state'ten house'u çek
+          try {
+            const gsRes = await fetch(`http://localhost:8001/api/house-points?session_id=${encodeURIComponent(sessionId)}`);
+            if (gsRes.ok) {
+              const gsData = await gsRes.json();
+              const ph = gsData.game_state?.player_house;
+              if (ph) {
+                // activeCharacter'ı güncelle
+                const updatedChar = { ...activeCharacter, house: ph };
+                // AppContext'teki setCharacters veya updateCharacter fonksiyonunu kullan
+                // Eğer yoksa localStorage'ı direkt güncelle:
+                const chars = JSON.parse(localStorage.getItem('hp_characters') || '[]');
+                const updated = chars.map((c: any) => c.id === activeCharacter.id ? { ...c, house: ph } : c);
+                localStorage.setItem('hp_characters', JSON.stringify(updated));
+              }
+            }
+          } catch {}
+        }
       } catch (e) {
         console.error('History load error:', e);
       }
