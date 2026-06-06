@@ -251,3 +251,13 @@ async def chat_endpoint(request: Request):
         },
         background=background_tasks,
     )
+
+
+@router.delete("/api/messages")
+async def delete_messages(session_id: str = Query(..., min_length=1)):
+    """Delete all messages and memories for a given session_id."""
+    if supabase:
+        supabase.table("messages").delete().eq("session_id", session_id).execute()
+        supabase.table("user_memories").delete().eq("session_id", session_id).execute()
+    return {"status": "ok"}
+

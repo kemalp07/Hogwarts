@@ -9,6 +9,7 @@ import {
   ImageBackground,
   Image,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useAppContext, Character } from '../context/AppContext';
 
@@ -37,6 +38,44 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
     navigation.navigate('CharacterCreation');
   };
 
+  const handleDeleteCharacter = (character: Character) => {
+    Alert.alert(
+      'Karakteri Sil',
+      'Bu karakteri ve tüm sohbet geçmişini silmek istediğine emin misin?',
+      [
+        {
+          text: 'İptal',
+          style: 'cancel',
+        },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Delete messages from backend
+              await fetch(`http://localhost:8001/api/messages?session_id=${encodeURIComponent(character.sessionId)}`, {
+                method: 'DELETE',
+              });
+
+              // Remove character from array
+              const updatedCharacters = characters.filter(c => c.id !== character.id);
+              setCharacters(updatedCharacters);
+
+              // Clear active character if it was the deleted one
+              const activeId = localStorage.getItem('hp_active_character_id');
+              if (activeId === character.id) {
+                localStorage.removeItem('hp_active_character_id');
+                setActiveCharacter(null);
+              }
+            } catch (error) {
+              console.error('Delete error:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ImageBackground 
@@ -57,35 +96,44 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
             <View style={styles.centerContent}>
               <Text style={styles.subtitle}>Henüz karakterin yok</Text>
               <Pressable
-                style={styles.button}
+                style={styles.emptyButton}
                 onPress={handleNewCharacter}
               >
-                <Text style={styles.buttonText}>Yeni Karakter Oluştur</Text>
+                <Text style={styles.emptyButtonText}>Yeni Karakter Oluştur</Text>
               </Pressable>
             </View>
           ) : (
             <View style={styles.characterList}>
               {characters.map((character) => (
-                <Pressable
-                  key={character.id}
-                  style={styles.characterCard}
-                  onPress={() => handleSelectCharacter(character)}
-                >
-                  <Text style={styles.characterName}>{character.name}</Text>
-                  <View style={styles.characterDetails}>
-                    <Text style={styles.characterHouse}>{character.house || 'Ev seçilmedi'}</Text>
-                    <Text style={styles.characterTraits}>
-                      {character.traits.slice(0, 2).join(', ')}
-                    </Text>
-                  </View>
-                </Pressable>
+                <View key={character.id} style={styles.characterCard}>
+                  <Pressable
+                    style={styles.characterCardContent}
+                    onPress={() => handleSelectCharacter(character)}
+                  >
+                    <Text style={styles.characterName}>{character.name}</Text>
+                    <View style={styles.characterDetails}>
+                      <Text style={styles.characterHouse}>{character.house || 'Ev seçilmedi'}</Text>
+                      <Text style={styles.characterTraits}>
+                        {character.traits.slice(0, 2).join(', ')}
+                      </Text>
+                    </View>
+                  </Pressable>
+                  <Pressable
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteCharacter(character)}
+                  >
+                    <Text style={styles.deleteButtonText}>✕</Text>
+                  </Pressable>
+                </View>
               ))}
-              <Pressable
-                style={styles.newCharacterButton}
-                onPress={handleNewCharacter}
-              >
-                <Text style={styles.newCharacterButtonText}>+ Yeni Karakter</Text>
-              </Pressable>
+              {characters.length < 3 && (
+                <Pressable
+                  style={styles.newCharacterButton}
+                  onPress={handleNewCharacter}
+                >
+                  <Text style={styles.newCharacterButtonText}>+ Yeni Karakter</Text>
+                </Pressable>
+              )}
             </View>
           )}
         </ScrollView>
@@ -159,6 +207,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  characterCardContent: {
+    flex: 1,
   },
   characterName: {
     fontSize: 18,
@@ -179,6 +233,20 @@ const styles = StyleSheet.create({
   characterTraits: {
     fontSize: 11,
     color: 'rgba(245, 220, 180, 0.5)',
+  },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 100, 100, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  deleteButtonText: {
+    color: 'rgba(255, 150, 150, 0.8)',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   newCharacterButton: {
     width: '100%',
@@ -212,5 +280,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 2,
+  },
+  emptyButton: {
+    width: '60%',
+    maxWidth: 320,
+    alignSelf: 'center',
+    height: 52,
+    backgroundColor: 'rgba(120, 50, 8, 0.95)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 220, 180, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+    paddingHorizontal: 24,
+  },
+  emptyButtonText: {
+    color: '#F5E6C8',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 2,
+    fontFamily: 'Cinzel, serif',
   },
 });

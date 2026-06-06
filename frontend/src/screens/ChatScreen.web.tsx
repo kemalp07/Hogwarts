@@ -377,6 +377,7 @@ const {
   activeCharacter,
   characters,
   setCharacters,
+  sessionId,
   messages,
   setMessages,
   isLoading,
@@ -384,7 +385,6 @@ const {
 } = useAppContext();
 
   const userName = activeCharacter?.name || '';
-  const sessionId = activeCharacter?.sessionId || '';
   const hogwartsHouse = activeCharacter?.house || '';
   const characterProfile = activeCharacter ? {
     gender: activeCharacter.gender,

@@ -28,6 +28,7 @@ export type AppContextType = {
   setCharacters: (chars: Character[] | ((prev: Character[]) => Character[])) => void;
   activeCharacter: Character | null;
   setActiveCharacter: (char: Character | null) => void;
+  sessionId: string;
   messages: Message[];
   setMessages: (msgs: Message[] | ((prev: Message[]) => Message[])) => void;
   isLoading: boolean;
@@ -44,12 +45,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   );
   const [activeCharacter, setActiveCharacter] = useState<Character | null>(() => {
-    const activeId = localStorage.getItem('hp_active_character_id');
-    if (!activeId) return null;
-    const saved = localStorage.getItem('hp_characters');
-    if (!saved) return null;
-    const chars = JSON.parse(saved);
-    return chars.find((c: Character) => c.id === activeId) || null;
+    const activeCharId = localStorage.getItem('hp_active_character_id');
+    const characters = JSON.parse(localStorage.getItem('hp_characters') || '[]');
+    const activeChar = characters.find((c: any) => c.id === activeCharId);
+    return activeChar || null;
+  });
+  const [sessionId] = useState(() => {
+    const activeCharId = localStorage.getItem('hp_active_character_id');
+    const characters = JSON.parse(localStorage.getItem('hp_characters') || '[]');
+    const activeChar = characters.find((c: any) => c.id === activeCharId);
+    return activeChar?.sessionId || crypto.randomUUID();
   });
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -73,6 +78,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCharacters,
         activeCharacter,
         setActiveCharacter,
+        sessionId,
         messages,
         setMessages,
         isLoading,
