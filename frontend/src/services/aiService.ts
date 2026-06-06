@@ -91,7 +91,20 @@ export async function sendMessage(
       }
 
       try {
-        const parsed = JSON.parse(dataPart) as { type?: string; text?: string; character_name?: string; house_points?: any; game_state?: any; narrator_injection?: string };
+        const parsed = JSON.parse(dataPart) as {
+          type?: string;
+          text?: string;
+          character_name?: string;
+          house_points?: any;
+          game_state?: any;
+          narrator_injection?: string;
+          simulation_params?: {
+            session_id: string;
+            player_house: string;
+            week: number;
+            day: number;
+          };
+        };
         if (parsed.type === 'meta') {
           housePoints = parsed.house_points;
           gameState = parsed.game_state;
@@ -104,6 +117,31 @@ export async function sendMessage(
           }
           if (parsed.house_points) {
             housePoints = parsed.house_points;
+          }
+
+          if (parsed.simulation_params) {
+            const sp = parsed.simulation_params;
+            fetch('http://localhost:8001/api/run-simulation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                session_id: sp.session_id,
+                player_house: sp.player_house,
+                week: sp.week,
+                day: sp.day,
+                conversation: messages.slice(-10).map((m) => ({
+                  role: m.role === 'ai' ? 'assistant' : 'user',
+                  content: m.text || '',
+                })),
+              }),
+            })
+              .then((r) => r.json())
+              .then((data) => {
+                if (data.house_points) {
+                  housePoints = data.house_points;
+                }
+              })
+              .catch(() => {});
           }
         }
       } catch {

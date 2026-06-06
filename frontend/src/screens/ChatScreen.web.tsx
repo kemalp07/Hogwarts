@@ -752,7 +752,7 @@ const {
           createMessage('ai', aiResponse.text, aiResponse.characterName),
         ]);
       }
-      setTimeout(() => fetchHousePoints(), 3000);
+      setTimeout(() => fetchHousePoints(), 2000);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -809,7 +809,7 @@ const {
           createMessage('ai', response.text, response.characterName),
         ]);
       }
-      setTimeout(() => fetchHousePoints(), 3000);
+      setTimeout(() => fetchHousePoints(), 2000);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([

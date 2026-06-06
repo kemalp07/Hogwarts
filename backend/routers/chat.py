@@ -1,8 +1,7 @@
 import logging
-import asyncio
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request, Query
+from fastapi import APIRouter, HTTPException, Request, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, StreamingResponse
 import os
 import uuid
@@ -265,8 +264,7 @@ async def chat_endpoint(request: Request):
         char_name = detect_character(full_text)
         await save_messages(session_id, message, full_text)
 
-        # Simülasyon henüz background'da çalışıyor olabilir
-        # Mevcut puanı gönder — simülasyon bitince bir sonraki mesajda görünür
+        # Mevcut puanı gönder — frontend /run-simulation sonrası fetchHousePoints ile günceller
         try:
             _final_points = get_house_points(session_id)
         except Exception:
@@ -276,26 +274,17 @@ async def chat_endpoint(request: Request):
             "type": "done",
             "character_name": char_name,
             "house_points": _final_points,
+            "simulation_params": {
+                "session_id": session_id,
+                "player_house": game_state.get("player_house", "gryffindor"),
+                "week": game_state.get("current_week", 1),
+                "day": game_state.get("current_day", 1),
+            },
         })
         yield f"data: {done}\n\n"
 
-        # Stream bitti — background task'ları burada başlat
-        asyncio.create_task(persist_memory_after_response(session_id, character_id, memory_state))
-        asyncio.create_task(_run_simulation(
-            session_id,
-            conversation_for_memory,
-            game_state.get("player_house", "gryffindor"),
-            game_state.get("current_week", 1),
-            game_state.get("current_day", 1),
-        ))
-
-    async def _run_simulation(sid: str, conv: list, house: str, w: int, d: int):
-        logger.info(f"[{sid}] Starting simulation house={house} w={w} d={d}")
-        try:
-            await run_point_simulation(sid, conv, house, w, d)
-            logger.info(f"[{sid}] Simulation complete")
-        except Exception as e:
-            logger.error(f"Simulation bg error: {e}", exc_info=True)
+    background_tasks = BackgroundTasks()
+    background_tasks.add_task(persist_memory_after_response, session_id, character_id, memory_state)
 
     return StreamingResponse(
         generate(),
@@ -304,7 +293,31 @@ async def chat_endpoint(request: Request):
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
         },
+        background=background_tasks,
     )
+
+
+@router.post("/run-simulation")
+async def run_simulation_endpoint(request: Request):
+    body = await request.json()
+    session_id = body.get("session_id", "")
+    player_house = body.get("player_house", "gryffindor")
+    week = int(body.get("week", 1))
+    day = int(body.get("day", 1))
+    conversation = body.get("conversation", [])
+
+    if not session_id:
+        return JSONResponse(content={"status": "error", "detail": "session_id required"})
+
+    logger.info(f"[{session_id}] Starting simulation house={player_house} w={week} d={day}")
+    try:
+        await run_point_simulation(session_id, conversation, player_house, week, day)
+        logger.info(f"[{session_id}] Simulation complete")
+    except Exception as e:
+        logger.error(f"Simulation error: {e}", exc_info=True)
+
+    points = get_house_points(session_id)
+    return JSONResponse(content={"status": "ok", "house_points": points})
 
 
 @router.delete("/api/messages")
