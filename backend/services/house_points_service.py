@@ -48,18 +48,38 @@ def get_house_points(session_id: str) -> dict:
 
 def get_game_state(session_id: str) -> dict:
     if not supabase:
-        return {"current_week": 1, "current_day": 1, "current_hour": 8, "player_house": "gryffindor", "last_activity_at": None}
+        return {
+            "current_week": 1,
+            "current_day": 7,
+            "current_hour": 20,
+            "player_house": "gryffindor",
+            "daily_message_count": 0,
+            "last_activity_at": None,
+        }
     try:
         resp = supabase.table("game_state").select("*").eq("session_id", session_id).execute()
         if resp.data:
             return resp.data[0]
         # İlk kez → oluştur
-        default = {"session_id": session_id, "current_week": 1, "current_day": 1, "current_hour": 8, "player_house": "gryffindor"}
+        default = {
+            "session_id": session_id,
+            "current_week": 1,
+            "current_day": 7,
+            "current_hour": 20,
+            "player_house": "gryffindor",
+            "daily_message_count": 0,
+        }
         supabase.table("game_state").insert(default).execute()
         return default
     except Exception as e:
         logger.error(f"get_game_state error: {e}")
-        return {"current_week": 1, "current_day": 1, "current_hour": 8, "player_house": "gryffindor"}
+        return {
+            "current_week": 1,
+            "current_day": 7,
+            "current_hour": 20,
+            "player_house": "gryffindor",
+            "daily_message_count": 0,
+        }
 
 
 # ── WRITE (internal only) ─────────────────────────────────────────────────────
