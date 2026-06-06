@@ -19,6 +19,7 @@ from ..services.house_points_service import (
     increment_message_count,
     check_sleep_trigger,
     build_current_time_context,
+    get_todays_schedule,
 )
 from ..services.world_simulation import run_point_simulation
 from ..services.relationship_service import analyze_relationship_changes, build_relationship_context
@@ -366,6 +367,61 @@ async def delete_messages(session_id: str = Query(..., min_length=1)):
     return {"status": "ok"}
 
 
+@router.get("/schedule")
+async def schedule_endpoint(session_id: str = Query(..., min_length=1)):
+    """Bugünün ve yarının ders programını döner."""
+    state = get_game_state(session_id)
+    week = state.get("current_week", 1)
+    day = state.get("current_day", 1)
+    hour = state.get("current_hour", 8)
+
+    tomorrow_day = day + 1
+    tomorrow_week = week
+    if tomorrow_day > 7:
+        tomorrow_day = 1
+        tomorrow_week += 1
+
+    today_schedule = get_todays_schedule(week, day)
+    tomorrow_schedule = get_todays_schedule(tomorrow_week, tomorrow_day)
+
+    day_names = {1: "Pazartesi", 2: "Salı", 3: "Çarşamba", 4: "Perşembe",
+                 5: "Cuma", 6: "Cumartesi", 7: "Pazar"}
+
+    def build_classes(schedule, current_hour, is_today):
+        classes = []
+        for cls in schedule:
+            cls_hour = int(cls["time"].split(":")[0])
+            if is_today:
+                if cls_hour < current_hour:
+                    status = "done"
+                elif cls_hour == current_hour:
+                    status = "active"
+                elif cls_hour <= current_hour + 2:
+                    status = "upcoming"
+                else:
+                    status = "future"
+            else:
+                status = "future"
+            classes.append({
+                "time": cls["time"],
+                "subject": cls["subject"],
+                "teacher": cls.get("teacher", ""),
+                "status": status,
+                "penalty": abs(cls["house_penalty"]["delta"]) if cls.get("house_penalty") else 0,
+            })
+        return classes
+
+    return JSONResponse(content={
+        "week": week,
+        "day": day,
+        "day_name": day_names.get(day, "Gün"),
+        "hour": hour,
+        "schedule": build_classes(today_schedule, hour, True),
+        "tomorrow_day_name": day_names.get(tomorrow_day, "Gün"),
+        "tomorrow_schedule": build_classes(tomorrow_schedule, hour, False),
+    })
+
+
 @router.get("/house-points")
 async def house_points_endpoint(session_id: str = Query(..., min_length=1)):
     """Anlık ev puanlarını döner. Frontend polling için."""
@@ -411,8 +467,14 @@ async def set_house_endpoint(request: Request):
 
     if supabase:
         supabase.table("game_state").upsert(
-            {"session_id": session_id, "player_house": house,
-             "current_week": 1, "current_day": 1, "current_hour": 8},
+            {
+                "session_id": session_id,
+                "player_house": house,
+                "current_week": 1,
+                "current_day": 1,
+                "current_hour": 20,
+                "daily_message_count": 0,
+            },
             on_conflict="session_id"
         ).execute()
     return {"status": "ok", "house": house}

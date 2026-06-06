@@ -530,6 +530,210 @@ const HousePointsPanel: React.FC<HousePanelProps> = ({
   );
 };
 
+const TimeStrip: React.FC<{ data: any; onPress: () => void }> = ({ data, onPress }) => {
+  if (!data) return null;
+
+  const activeClass = data.schedule?.find((c: any) => c.status === 'active');
+  const upcomingClass = data.schedule?.find((c: any) => c.status === 'upcoming');
+
+  const accentColor = activeClass ? '#e87a7a'
+    : upcomingClass ? '#e8b86d'
+    : '#7acf7a';
+
+  return (
+    <Pressable
+      onPress={onPress}
+      pointerEvents="auto"
+      style={{
+        position: 'absolute',
+        bottom: 90,
+        right: 8,
+        width: 120,
+        height: 120,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(5,3,1,0.85)',
+        borderRadius: 8,
+        padding: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(201,168,76,0.25)',
+        borderLeftWidth: 3,
+        borderLeftColor: accentColor,
+        zIndex: 15,
+      }}
+    >
+      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontFamily: 'Cinzel, serif', letterSpacing: 1 }}>
+        {data.day_name} • {data.week}. Hafta
+      </Text>
+      <Text style={{ color: '#c9a84c', fontSize: 13, fontFamily: 'Cinzel, serif', fontWeight: '700', marginTop: 2 }}>
+        {String(data.hour).padStart(2, '0')}:00
+      </Text>
+      <Text style={{ color: accentColor, fontSize: 10, fontFamily: 'Cinzel, serif', marginTop: 3 }}>
+        {activeClass ? `🔴 ${activeClass.subject}`
+         : upcomingClass ? `⏳ ${upcomingClass.subject}`
+         : '✨ Serbest'}
+      </Text>
+    </Pressable>
+  );
+};
+
+const SchedulePopup: React.FC<{
+  data: any;
+  onClose: () => void;
+}> = ({ data, onClose }) => {
+  if (!data) return null;
+
+  const statusIcon = (status: string) => {
+    switch (status) {
+      case 'done':
+        return '✅';
+      case 'active':
+        return '🔴';
+      case 'upcoming':
+        return '⏳';
+      default:
+        return '📚';
+    }
+  };
+
+  return (
+    <Pressable
+      onPress={onClose}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        zIndex: 100,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        paddingTop: 120,
+      }}
+    >
+      <Pressable
+        onPress={(e) => e.stopPropagation?.()}
+        style={{
+          backgroundColor: 'rgba(15, 10, 3, 0.97)',
+          borderRadius: 12,
+          padding: 20,
+          width: 320,
+          borderWidth: 1,
+          borderColor: 'rgba(201,168,76,0.3)',
+        }}
+      >
+        <Text
+          style={{
+            color: '#c9a84c',
+            fontSize: 16,
+            fontFamily: 'Cinzel, serif',
+            fontWeight: '600',
+            textAlign: 'center',
+            marginBottom: 4,
+          }}
+        >
+          {data.day_name} Programı
+        </Text>
+        <Text
+          style={{
+            color: 'rgba(255,255,255,0.4)',
+            fontSize: 11,
+            fontFamily: 'Cinzel, serif',
+            textAlign: 'center',
+            marginBottom: 16,
+          }}
+        >
+          {data.week}. Hafta • Saat {String(data.hour).padStart(2, '0')}:00
+        </Text>
+
+        {data.schedule?.length === 0 ? (
+          <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontStyle: 'italic' }}>
+            Bugün ders yok — serbest zaman
+          </Text>
+        ) : (
+          data.schedule?.map((cls: any, i: number) => (
+            <View
+              key={i}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 8,
+                borderBottomWidth: 0.5,
+                borderBottomColor: 'rgba(255,255,255,0.08)',
+                gap: 10,
+              }}
+            >
+              <Text style={{ fontSize: 16 }}>{statusIcon(cls.status)}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#fff', fontSize: 13, fontFamily: 'Cinzel, serif' }}>
+                  {cls.time} — {cls.subject}
+                </Text>
+                {cls.teacher ? (
+                  <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+                    {cls.teacher}
+                    {cls.penalty > 0 ? ` • kaçırırsan -${cls.penalty} puan` : ''}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ))
+        )}
+
+        <Text
+          style={{
+            color: '#c9a84c',
+            fontSize: 13,
+            fontFamily: 'Cinzel, serif',
+            marginTop: 16,
+            marginBottom: 8,
+            fontWeight: '600',
+          }}
+        >
+          Yarın — {data.tomorrow_day_name}
+        </Text>
+        {data.tomorrow_schedule?.length === 0 ? (
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontStyle: 'italic' }}>
+            Yarın ders yok
+          </Text>
+        ) : (
+          data.tomorrow_schedule?.map((cls: any, i: number) => (
+            <View
+              key={`tomorrow-${i}`}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 6,
+                borderBottomWidth: 0.5,
+                borderBottomColor: 'rgba(255,255,255,0.06)',
+                gap: 10,
+              }}
+            >
+              <Text style={{ fontSize: 14 }}>📚</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontFamily: 'Cinzel, serif' }}>
+                  {cls.time} — {cls.subject}
+                </Text>
+                {cls.teacher ? (
+                  <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10 }}>
+                    {cls.teacher}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ))
+        )}
+
+        <Pressable onPress={onClose} style={{ marginTop: 16, alignItems: 'center' }}>
+          <Text style={{ color: 'rgba(201,168,76,0.6)', fontSize: 12, fontFamily: 'Cinzel, serif' }}>
+            Kapat
+          </Text>
+        </Pressable>
+      </Pressable>
+    </Pressable>
+  );
+};
+
 export const ChatScreen = ({ navigation }: any) => {
 const {
   activeCharacter,
@@ -633,6 +837,8 @@ const {
   const [showHouseSelection, setShowHouseSelection] = useState<boolean>(false);
   const [tipIndex, setTipIndex] = useState(0);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [scheduleData, setScheduleData] = useState<any>(null);
+  const [showSchedule, setShowSchedule] = useState(false);
 
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
 
@@ -761,6 +967,7 @@ const {
       setTimeout(() => fetchHousePoints(), 2000);
       setTimeout(() => fetchHousePoints(), 5000);
       setTimeout(() => fetchHousePoints(), 10000);
+      setTimeout(() => fetchSchedule(), 2000);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -820,6 +1027,7 @@ const {
       setTimeout(() => fetchHousePoints(), 2000);
       setTimeout(() => fetchHousePoints(), 5000);
       setTimeout(() => fetchHousePoints(), 10000);
+      setTimeout(() => fetchSchedule(), 2000);
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -850,6 +1058,21 @@ const {
       if (data.points) setHousePoints(data.points);
     } catch {}
   };
+
+  const fetchSchedule = async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch(`http://localhost:8001/api/schedule?session_id=${encodeURIComponent(sessionId)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setScheduleData(data);
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (!sessionId) return;
+    fetchSchedule();
+  }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -972,6 +1195,12 @@ const {
                   </Pressable>
                 </View>
               </View>
+            )}
+
+            <TimeStrip data={scheduleData} onPress={() => setShowSchedule(true)} />
+
+            {showSchedule && (
+              <SchedulePopup data={scheduleData} onClose={() => setShowSchedule(false)} />
             )}
           </View>
         </KeyboardAvoidingView>
