@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional
 
-from ..db.supabase_client import supabase
+from db.supabase_client import supabase
 
 logger = logging.getLogger(__name__)
 

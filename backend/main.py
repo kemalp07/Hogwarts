@@ -1,10 +1,17 @@
+import sys
+from pathlib import Path
+
+_BACKEND_ROOT = Path(__file__).resolve().parent
+if str(_BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_ROOT))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
-from .routers.chat import router as chat_router
-from .routers.locations import router as locations_router
+from routers.chat import router as chat_router
+from routers.locations import router as locations_router
 
-from .services.world_simulation import start_organic_scheduler
+from services.world_simulation import start_organic_scheduler
 
 app = FastAPI()
 

@@ -36,6 +36,33 @@ const WEB_INPUT_RESET =
     ? ({ outlineWidth: 0, outlineStyle: 'none', boxShadow: 'none' } as any)
     : undefined;
 
+const LOCATION_BACKGROUNDS: Record<string, any> = {
+  gryffindor_tower: require('../../assets/backgrounds/gryffindor_tower.png'),
+  great_hall: require('../../assets/backgrounds/great_hall.png'),
+  library: require('../../assets/backgrounds/library.png'),
+  dungeons: require('../../assets/backgrounds/dungeons.png'),
+  quidditch_field: require('../../assets/backgrounds/quidditch_field.png'),
+  corridor: require('../../assets/backgrounds/corridor.png'),
+  classroom: require('../../assets/backgrounds/classroom.png'),
+  owlery: require('../../assets/backgrounds/owlery.png'),
+  hospital_wing: require('../../assets/backgrounds/hospital_wing.png'),
+  forbidden_forest: require('../../assets/backgrounds/forbidden_forest.png'),
+  hogsmeade: require('../../assets/backgrounds/hogsmeade.png'),
+  astronomy_tower: require('../../assets/backgrounds/astronomy_tower.png'),
+  potions_classroom: require('../../assets/backgrounds/potions_classroom.png'),
+  transfiguration_classroom: require('../../assets/backgrounds/transfiguration_classroom.png'),
+  charms_classroom: require('../../assets/backgrounds/charms_classroom.png'),
+  herbology_greenhouse: require('../../assets/backgrounds/herbology_greenhouse.png'),
+  defense_classroom: require('../../assets/backgrounds/defense_classroom.png'),
+  great_lake: require('../../assets/backgrounds/great_lake.png'),
+  slytherin_common_room: require('../../assets/backgrounds/slytherin_common_room.png'),
+  hufflepuff_common_room: require('../../assets/backgrounds/hufflepuff_common_room.png'),
+  ravenclaw_common_room: require('../../assets/backgrounds/ravenclaw_common_room.png'),
+  gryffindor_dormitory: require('../../assets/backgrounds/gryffindor_dormitory.png'),
+  slytherin_dormitory: require('../../assets/backgrounds/slytherin_dormitory.png'),
+  room_of_requirement: require('../../assets/backgrounds/room_of_requirement.png'),
+};
+
 const CHARACTER_AVATARS: Record<string, any> = {
   NARRATOR: require('../../assets/characters/sorting_hat.png'),
   'Harry Potter': require('../../assets/characters/harry.png'),
@@ -1090,6 +1117,9 @@ const {
   const [tipIndex, setTipIndex] = useState(0);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [scheduleData, setScheduleData] = useState<any>(null);
+  const [currentLocation, setCurrentLocation] = useState<string>('gryffindor_tower');
+  const [displayLocation, setDisplayLocation] = useState<string>('gryffindor_tower');
+  const bgOpacity = useRef(new Animated.Value(1)).current;
   const [showSchedule, setShowSchedule] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -1221,9 +1251,9 @@ const {
           createMessage('ai', aiResponse.text, aiResponse.characterName),
         ]);
       }
-      setTimeout(() => fetchHousePoints(), 2000);
-      setTimeout(() => fetchHousePoints(), 5000);
-      setTimeout(() => fetchHousePoints(), 10000);
+      setTimeout(() => fetchHousePoints(), 4000);
+      setTimeout(() => fetchHousePoints(), 8000);
+      setTimeout(() => fetchHousePoints(), 15000);
       setTimeout(() => fetchSchedule(), 2000);
     } catch (error) {
       console.error('AI Error:', error);
@@ -1286,9 +1316,9 @@ const {
           createMessage('ai', response.text, response.characterName),
         ]);
       }
-      setTimeout(() => fetchHousePoints(), 2000);
-      setTimeout(() => fetchHousePoints(), 5000);
-      setTimeout(() => fetchHousePoints(), 10000);
+      setTimeout(() => fetchHousePoints(), 4000);
+      setTimeout(() => fetchHousePoints(), 8000);
+      setTimeout(() => fetchHousePoints(), 15000);
       setTimeout(() => fetchSchedule(), 2000);
     } catch (error) {
       console.error('AI Error:', error);
@@ -1331,13 +1361,40 @@ const {
       if (!res.ok) return;
       const data = await res.json();
       setScheduleData(data);
+      if (data.location) setCurrentLocation(data.location);
+    } catch {}
+  };
+
+  const fetchLocation = async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch(`http://localhost:8001/api/schedule?session_id=${encodeURIComponent(sessionId)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.location) setCurrentLocation(data.location);
     } catch {}
   };
 
   useEffect(() => {
     if (!sessionId) return;
     fetchSchedule();
+    fetchLocation();
   }, [sessionId]);
+
+  useEffect(() => {
+    Animated.timing(bgOpacity, {
+      toValue: 0,
+      duration: 600,
+      useNativeDriver: true,
+    }).start(() => {
+      setDisplayLocation(currentLocation);
+      Animated.timing(bgOpacity, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [currentLocation]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -1353,7 +1410,19 @@ const {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.overlay}>
-        <View style={styles.backgroundColorFill} />
+        <Animated.Image
+          source={LOCATION_BACKGROUNDS[displayLocation] ?? LOCATION_BACKGROUNDS.gryffindor_tower}
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            width: '100%',
+            height: '100%',
+            opacity: bgOpacity.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1.0],
+            }),
+          } as any}
+          resizeMode="cover"
+        />
         <View style={styles.backgroundDarkOverlay} />
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
         <KeyboardAvoidingView
@@ -1532,15 +1601,10 @@ const styles = StyleSheet.create({
   backgroundColorFill: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
-    backgroundImage: "url('/assets/hogwarts_clean.png')",
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    opacity: 0.55,
   },
   backgroundDarkOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
   },
   keyboardAvoidingView: {
     flex: 1,

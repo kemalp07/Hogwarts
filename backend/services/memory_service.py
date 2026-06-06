@@ -8,8 +8,8 @@ import httpx
 from dotenv import load_dotenv
 from google.auth.transport.requests import Request as GoogleAuthRequest
 
-from ..db.supabase_client import supabase
-from .vertex_ai import DEFAULT_LOCATION, DEFAULT_MODEL, _load_service_account
+from db.supabase_client import supabase
+from services.vertex_ai import DEFAULT_LOCATION, DEFAULT_MODEL, _load_service_account
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / ".env", override=True)

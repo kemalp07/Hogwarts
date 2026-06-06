@@ -6,10 +6,10 @@ from fastapi.responses import JSONResponse, StreamingResponse
 import os
 import uuid
 import json
-from ..services.prompt_builder import build_prompt
-from ..services.memory_service import generate_summary, get_memories, maybe_summarize_and_compress, save_memory
-from ..services.vertex_ai import stream_vertex_ai
-from ..services.house_points_service import (
+from services.prompt_builder import build_prompt
+from services.memory_service import generate_summary, get_memories, maybe_summarize_and_compress, save_memory
+from services.vertex_ai import stream_vertex_ai
+from services.house_points_service import (
     get_house_points,
     get_game_state,
     check_inactivity_advance,
@@ -24,9 +24,9 @@ from ..services.house_points_service import (
     get_missed_classes_for_prompt,
     build_missed_class_context,
 )
-from ..services.world_simulation import run_point_simulation, extract_time_from_response, extract_inventory_and_location
-from ..services.relationship_service import analyze_relationship_changes, build_relationship_context
-from ..db.supabase_client import insert_message, supabase
+from services.world_simulation import run_point_simulation, extract_time_from_response, extract_inventory_and_location
+from services.relationship_service import analyze_relationship_changes, build_relationship_context
+from db.supabase_client import insert_message, supabase
 import traceback
 from pathlib import Path
 from datetime import datetime
@@ -480,6 +480,7 @@ async def schedule_endpoint(session_id: str = Query(..., min_length=1)):
         "day": day,
         "day_name": day_names.get(day, "Gün"),
         "hour": hour,
+        "location": state.get("current_location", "gryffindor_tower"),
         "schedule": build_classes(today_schedule, hour, True),
         "tomorrow_day_name": day_names.get(tomorrow_day, "Gün"),
         "tomorrow_schedule": build_classes(tomorrow_schedule, hour, False),

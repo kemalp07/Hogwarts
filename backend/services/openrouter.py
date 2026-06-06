@@ -3,7 +3,7 @@ import httpx
 from typing import List, Dict
 from dotenv import load_dotenv
 from pathlib import Path
-from .text_utils import normalize_turkish_text
+from services.text_utils import normalize_turkish_text
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(PROJECT_ROOT / ".env", override=True)

@@ -393,7 +393,10 @@ Every response MUST use these tags. No exceptions.
 [BLAISE] Use for Blaise Zabini's dialogue and reactions.
 [CHARACTER:Name] Use this for any other character not listed above.
 
-[LOCATION: konum_adı] — Kemal'in konumu değiştiğinde kullan. Örnek: [LOCATION: great_hall], [LOCATION: gryffindor_tower], [LOCATION: library], [LOCATION: dungeons], [LOCATION: quidditch_field], [LOCATION: corridor]
+[LOCATION: konum_adı] — Kemal bir mekandan diğerine geçtiğinde MUTLAKA yaz. Geçerli konum adları (sadece bunları kullan):
+gryffindor_tower, great_hall, library, dungeons, quidditch_field, corridor, classroom, owlery, hospital_wing, forbidden_forest, hogsmeade, astronomy_tower, potions_classroom, transfiguration_classroom, charms_classroom, herbology_greenhouse, defense_classroom, great_lake, slytherin_common_room, hufflepuff_common_room, ravenclaw_common_room, gryffindor_dormitory, slytherin_dormitory, room_of_requirement
+Örnek: Kemal yemek salonuna gittiğinde → [LOCATION: great_hall], kütüphaneye gittiğinde → [LOCATION: library]
+Her konuşmada Kemal neredeyse mevcut konumu yaz — değişmese bile ilk mesajda belirt.
 [ITEM+: eşya_adı | tür | açıklama] — Kemal bir eşya edindiğinde kullan. Örnek: [ITEM+: Gizem Haritası | map | Hogwarts'ın tüm koridorlarını gösterir]
 [ITEM-: eşya_adı] — Kemal bir eşyayı kaybettiğinde veya verdiğinde kullan.
 Bu tag'ler yanıtın herhangi bir yerinde olabilir, [TIME:] gibi zorunlu değil — sadece gerçekten değişim olduğunda kullan.

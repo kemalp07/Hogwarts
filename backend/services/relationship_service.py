@@ -13,8 +13,8 @@ from datetime import datetime
 import httpx
 from google.auth.transport.requests import Request as GoogleAuthRequest
 
-from ..db.supabase_client import supabase
-from .vertex_ai import DEFAULT_LOCATION, DEFAULT_MODEL, _load_service_account
+from db.supabase_client import supabase
+from services.vertex_ai import DEFAULT_LOCATION, DEFAULT_MODEL, _load_service_account
 
 logger = logging.getLogger(__name__)
 

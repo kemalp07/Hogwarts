@@ -17,8 +17,8 @@ from pathlib import Path
 import httpx
 from google.auth.transport.requests import Request as GoogleAuthRequest
 
-from ..db.supabase_client import supabase
-from .vertex_ai import DEFAULT_LOCATION, DEFAULT_MODEL, _load_service_account
+from db.supabase_client import supabase
+from services.vertex_ai import DEFAULT_LOCATION, DEFAULT_MODEL, _load_service_account
 
 logger = logging.getLogger(__name__)
 HOUSES = ["gryffindor", "hufflepuff", "ravenclaw", "slytherin"]
@@ -245,7 +245,7 @@ async def analyze_class_attendance(session_id: str, conversation: list, player_h
     Sohbete bakarak oyuncunun hangi derslere girdiğini analiz et.
     Sadece kesin kanıt varsa işlem yap. Şüphede hiçbir şey yapma.
     """
-    from .house_points_service import (
+    from services.house_points_service import (
         get_past_classes_today,
         mark_class_attended,
         mark_class_missed,
@@ -510,7 +510,7 @@ async def extract_inventory_and_location(session_id: str, ai_response: str):
     if not ai_response:
         return
 
-    from .house_points_service import add_inventory_item, remove_inventory_item, update_location
+    from services.house_points_service import add_inventory_item, remove_inventory_item, update_location
 
     # Konum
     location_match = re.search(r'\[LOCATION:\s*([^\]]+)\]', ai_response, re.IGNORECASE)
