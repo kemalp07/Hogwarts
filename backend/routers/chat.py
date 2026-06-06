@@ -18,6 +18,7 @@ from ..services.house_points_service import (
     advance_day,
 )
 from ..services.world_simulation import run_point_simulation
+from ..services.relationship_service import analyze_relationship_changes, build_relationship_context
 from ..db.supabase_client import insert_message, supabase
 import traceback
 from pathlib import Path
@@ -174,6 +175,8 @@ async def chat_endpoint(request: Request):
     conversation_for_memory = _merge_history_and_current(history, message)
     memories = await get_memories(session_id)
 
+    relationship_context = build_relationship_context(session_id)
+
     messages_for_model = await build_prompt(
         user_name=user_name,
         character_id=character_id,
@@ -181,6 +184,7 @@ async def chat_endpoint(request: Request):
         messages=conversation_messages,
         memories=memories,
         character_profile=character_profile,
+        relationship_context=relationship_context,
     )
 
     model = body.get("model") or os.getenv("VERTEX_AI_MODEL", "gemini-2.0-flash-001")
@@ -316,6 +320,7 @@ async def run_simulation_endpoint(request: Request):
     week = int(body.get("week", 1))
     day = int(body.get("day", 1))
     conversation = body.get("conversation", [])
+    player_attraction = body.get("player_attraction", "Her ikisi")
 
     if not session_id:
         return JSONResponse(content={"status": "error", "detail": "session_id required"})
@@ -326,6 +331,16 @@ async def run_simulation_endpoint(request: Request):
         logger.info(f"[{session_id}] Simulation complete")
     except Exception as e:
         logger.error(f"Simulation error: {e}", exc_info=True)
+
+    try:
+        await analyze_relationship_changes(
+            session_id,
+            conversation,
+            body.get("player_name", "Öğrenci"),
+            player_attraction,
+        )
+    except Exception as e:
+        logger.error(f"Relationship analysis error: {e}")
 
     points = get_house_points(session_id)
     return JSONResponse(content={"status": "ok", "house_points": points})

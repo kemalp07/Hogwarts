@@ -543,6 +543,7 @@ const {
 } = useAppContext();
 
   const userName = activeCharacter?.name || '';
+  const playerAttraction = activeCharacter?.attraction || 'Her ikisi';
   const hogwartsHouse = activeCharacter?.house || '';
   const characterProfile = activeCharacter ? {
     gender: activeCharacter.gender,
@@ -736,7 +737,7 @@ const {
     setIsLoading(true);
 
     try {
-      const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse, sessionId, characterProfile);
+      const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse, sessionId, characterProfile, playerAttraction);
       if (aiResponse.housePoints) setHousePoints(aiResponse.housePoints);
       if (aiResponse.gameState) setGameState(aiResponse.gameState);
       if (aiResponse.narratorInjection) {
@@ -795,7 +796,7 @@ const {
     setIsLoading(true);
 
     try {
-      const response = await sendAiMessage(nextMessages, userName, house, sessionId, characterProfile);
+      const response = await sendAiMessage(nextMessages, userName, house, sessionId, characterProfile, playerAttraction);
       if (response.housePoints) setHousePoints(response.housePoints);
       if (response.gameState) setGameState(response.gameState);
       if (response.narratorInjection) {

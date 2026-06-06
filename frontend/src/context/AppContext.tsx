@@ -21,6 +21,7 @@ export type Character = {
   house: string;
   sessionId: string;
   createdAt: string;
+  attraction?: string;
 };
 
 export type AppContextType = {

@@ -182,7 +182,7 @@ def get_lorebook_entries(text: str, max_entries: int = 8) -> list[str]:
 
     return (constant_entries + matched_entries)[:max_entries]
 
-async def build_prompt(user_name: str, character_id: str, location_id: str, messages: List[dict], memories: List[str], character_profile: dict = None) -> list:
+async def build_prompt(user_name: str, character_id: str, location_id: str, messages: List[dict], memories: List[str], character_profile: dict = None, relationship_context: str = "") -> list:
     """Builds the system prompt using the character card, lorebook, and seed data."""
     project_root = _project_root()
     char_path = project_root / "database" / "seed_data" / "characters.json"
@@ -265,6 +265,7 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
         location.get("lore_context", ""),
         lorebook_text,
         memories_text,
+        relationship_context,
     ]
 
     system_content = "\n\n".join(part for part in system_parts if part).replace("{{user}}", user_name or "Öğrenci")
@@ -323,6 +324,10 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 - Occasionally remind the player of upcoming classes or events naturally through narrator or characters. For example: at the end of a dinner scene, a character might mention tomorrow's schedule, or the narrator might note the hour getting late before classes. Do this organically — not every response, just when it fits the scene.
 - Do NOT rush iconic Harry Potter events (three-headed dog, troll, Quidditch, etc.) too early. These should unfold naturally over weeks of in-game time, not in the first few sessions. Let the player settle into Hogwarts life first — classes, friendships, daily routines — before major plot events emerge.
 - The player's story is their own. Don't pull them into Harry's plot directly. Harry's adventures happen in the background.
+- CRITICAL: Match response length to the situation. Simple conversations = 1-2 short exchanges maximum. Do NOT write walls of text for casual moments.
+- CRITICAL: If the player is alone with one character, ONLY that character responds. Do NOT introduce other characters, mysterious strangers, notes, or events unless the player explicitly moves or acts.
+- CRITICAL: Do not add dramatic plot elements (mysterious notes, ominous messages, strangers appearing) unless the player's action directly triggers it. A player sitting with Hermione in the library just wants to talk to Hermione.
+- Let the player drive the scene. Respond only to what they do, not what you think should happen next.
 
 ### RESPONSE FORMAT — MANDATORY:
 Every response MUST use these tags. No exceptions.

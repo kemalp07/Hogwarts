@@ -108,3 +108,15 @@ CREATE TABLE game_state (
   player_house TEXT DEFAULT 'gryffindor' CHECK (player_house IN ('gryffindor', 'hufflepuff', 'ravenclaw', 'slytherin')),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Karakter ilişki skorları (gizli, system prompt'a enjekte edilir)
+CREATE TABLE character_relationships (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL,
+  character_name TEXT NOT NULL,
+  score INTEGER DEFAULT 0 CHECK (score BETWEEN -100 AND 100),
+  last_interaction TEXT,
+  relationship_type TEXT DEFAULT 'neutral' CHECK (relationship_type IN ('neutral', 'friendship', 'romance', 'rivalry')),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(session_id, character_name)
+);

@@ -30,6 +30,7 @@ export async function sendMessage(
   house: string = '',
   sessionId: string = '',
   characterProfile: any = null,
+  playerAttraction: string = 'Her ikisi',
 ): Promise<AIMessageResult> {
   try {
     const history: ApiMessage[] = messages
@@ -129,6 +130,8 @@ export async function sendMessage(
                 player_house: sp.player_house,
                 week: sp.week,
                 day: sp.day,
+                player_name: userName,
+                player_attraction: playerAttraction,
                 conversation: messages.slice(-10).map((m) => ({
                   role: m.role === 'ai' ? 'assistant' : 'user',
                   content: m.text || '',

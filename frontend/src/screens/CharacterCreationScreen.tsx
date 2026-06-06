@@ -17,6 +17,7 @@ type CharacterCreationScreenProps = {
 };
 
 const GENDERS = ['Erkek', 'Kadın', 'Belirtmiyorum'];
+const ATTRACTIONS = ['Kadınlar', 'Erkekler', 'Her ikisi'];
 const TRAITS = ['Cesur', 'Zeki', 'Sadık', 'Gizemli', 'Hırslı', 'Merhametli', 'Yaratıcı', 'Kararlı'];
 const ORIGINS = ['Muggle ailesi', 'Büyücü ailesi', 'Yarı kan'];
 const HEIGHTS = ['Kısa', 'Orta boy', 'Uzun'];
@@ -29,6 +30,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
   const { characters, setCharacters, setActiveCharacter } = useAppContext();
   const [name, setName] = useState('');
   const [gender, setGender] = useState('');
+  const [attraction, setAttraction] = useState('');
   const [selectedTraits, setSelectedTraits] = useState<string[]>([]);
   const [origin, setOrigin] = useState('');
   const [height, setHeight] = useState('');
@@ -55,12 +57,13 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
   };
 
   const handleContinue = () => {
-    if (!name || !gender || selectedTraits.length === 0 || !origin || !height || !hairColor || !fear || !hobby || !secretTrait) return;
+    if (!name || !gender || !attraction || selectedTraits.length === 0 || !origin || !height || !hairColor || !fear || !hobby || !secretTrait) return;
 
     const newCharacter: Character = {
       id: crypto.randomUUID(),
       name,
       gender,
+      attraction,
       traits: selectedTraits,
       origin,
       height,
@@ -79,7 +82,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
     navigation.navigate('Chat');
   };
 
-  const isButtonDisabled = !name || !gender || selectedTraits.length === 0 || !origin || !height || !hairColor || !fear || !hobby || !secretTrait;
+  const isButtonDisabled = !name || !gender || !attraction || selectedTraits.length === 0 || !origin || !height || !hairColor || !fear || !hobby || !secretTrait;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -123,6 +126,31 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
                       ]}
                     >
                       {g}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Kime ilgi duyarsın?</Text>
+              <View style={styles.optionsRow}>
+                {ATTRACTIONS.map((option) => (
+                  <Pressable
+                    key={option}
+                    style={[
+                      styles.optionButton,
+                      attraction === option && styles.optionButtonSelected,
+                    ]}
+                    onPress={() => setAttraction(option)}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        attraction === option && styles.optionTextSelected,
+                      ]}
+                    >
+                      {option}
                     </Text>
                   </Pressable>
                 ))}
