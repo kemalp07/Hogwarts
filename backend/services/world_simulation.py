@@ -170,7 +170,7 @@ Değişim yoksa: []"""
 async def simulate_world_events(session_id: str, week: int, day: int):
     """Sohbetten bağımsız, o günkü Hogwarts olaylarını simüle et."""
     # %90 ihtimalle çalış — her yanıtta dünya değişmesin
-    if random.random() > 0.9:
+    if random.random() > 0.1:
         return
 
     day_names = {1: "Pazartesi", 2: "Salı", 3: "Çarşamba", 4: "Perşembe",
