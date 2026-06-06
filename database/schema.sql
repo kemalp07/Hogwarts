@@ -73,3 +73,38 @@ CREATE TABLE messages (
   content TEXT NOT NULL,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Ev puanları (tüm session'lar için global değil, per-session)
+CREATE TABLE house_points (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL,
+  gryffindor INTEGER DEFAULT 0,
+  hufflepuff INTEGER DEFAULT 0,
+  ravenclaw INTEGER DEFAULT 0,
+  slytherin INTEGER DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(session_id)
+);
+
+-- Puan olayları log (audit trail + hikaye tutarlılığı)
+CREATE TABLE house_point_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL,
+  house TEXT NOT NULL CHECK (house IN ('gryffindor', 'hufflepuff', 'ravenclaw', 'slytherin')),
+  delta INTEGER NOT NULL,
+  reason TEXT NOT NULL,
+  source TEXT NOT NULL CHECK (source IN ('player_action', 'missed_class', 'natural_drift', 'event_spike')),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Oyun durumu (takvim + son aktivite zamanı)
+CREATE TABLE game_state (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL UNIQUE,
+  current_week INTEGER DEFAULT 1,
+  current_day INTEGER DEFAULT 1,   -- 1=Pazartesi ... 5=Cuma ... 7=Pazar
+  current_hour INTEGER DEFAULT 8,  -- 0-23
+  last_activity_at TIMESTAMP DEFAULT NOW(),
+  player_house TEXT DEFAULT 'gryffindor' CHECK (player_house IN ('gryffindor', 'hufflepuff', 'ravenclaw', 'slytherin')),
+  updated_at TIMESTAMP DEFAULT NOW()
+);

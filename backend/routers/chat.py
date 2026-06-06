@@ -8,6 +8,14 @@ import json
 from ..services.prompt_builder import build_prompt
 from ..services.memory_service import generate_summary, get_memories, maybe_summarize_and_compress, save_memory
 from ..services.vertex_ai import stream_vertex_ai
+from ..services.house_points_service import (
+    get_house_points,
+    get_game_state,
+    check_inactivity_advance,
+    build_narrator_day_message,
+    apply_player_action,
+    advance_day,
+)
 from ..db.supabase_client import insert_message, supabase
 import traceback
 from pathlib import Path
@@ -130,6 +138,16 @@ async def chat_endpoint(request: Request):
     user_name = body.get("user_name") or "Öğrenci"
     character_profile = body.get("character_profile")
 
+    # Inactivity kontrolü → otomatik gün geçişi
+    day_advanced = check_inactivity_advance(session_id, threshold_minutes=30)
+    narrator_injection = None
+    if day_advanced:
+        narrator_injection = build_narrator_day_message(session_id)
+
+    # Game state & house points → streaming meta'ya eklenecek
+    game_state = get_game_state(session_id)
+    house_points = get_house_points(session_id)
+
     # allow empty message for initial opening prompts; message may be empty string
 
     # Vertex AI does not like empty user turns, so we supply a short opening instruction when needed.
@@ -193,6 +211,13 @@ async def chat_endpoint(request: Request):
             "type": "meta",
             "session_id": session_id,
             "character_name": "",
+            "house_points": house_points,
+            "game_state": {
+                "week": game_state.get("current_week", 1),
+                "day": game_state.get("current_day", 1),
+                "player_house": game_state.get("player_house", "gryffindor"),
+            },
+            "narrator_injection": narrator_injection,
         })
         yield f"data: {meta}\n\n"
 
@@ -260,4 +285,52 @@ async def delete_messages(session_id: str = Query(..., min_length=1)):
         supabase.table("messages").delete().eq("session_id", session_id).execute()
         supabase.table("user_memories").delete().eq("session_id", session_id).execute()
     return {"status": "ok"}
+
+
+@router.get("/house-points")
+async def house_points_endpoint(session_id: str = Query(..., min_length=1)):
+    """Anlık ev puanlarını döner. Frontend polling için."""
+    points = get_house_points(session_id)
+    state = get_game_state(session_id)
+    return JSONResponse(content={
+        "points": points,
+        "game_state": {
+            "week": state.get("current_week", 1),
+            "day": state.get("current_day", 1),
+            "player_house": state.get("player_house", "gryffindor"),
+        }
+    })
+
+
+@router.post("/advance-day")
+async def advance_day_endpoint(request: Request):
+    """Manuel gün geçişi. Kullanıcı 'uyumak' istediğinde çağrılır."""
+    body = await request.json()
+    session_id = body.get("session_id", "")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id gerekli")
+    new_state = advance_day(session_id)
+    narrator_msg = build_narrator_day_message(session_id)
+    points = get_house_points(session_id)
+    return JSONResponse(content={
+        "game_state": new_state,
+        "house_points": points,
+        "narrator_message": narrator_msg,
+    })
+
+
+@router.post("/set-house")
+async def set_house_endpoint(request: Request):
+    body = await request.json()
+    session_id = body.get("session_id", "")
+    house = body.get("house", "gryffindor")
+    if house not in ["gryffindor", "hufflepuff", "ravenclaw", "slytherin"]:
+        raise HTTPException(status_code=400, detail="Geçersiz ev")
+    if supabase:
+        supabase.table("game_state").upsert(
+            {"session_id": session_id, "player_house": house},
+            on_conflict="session_id"
+        ).execute()
+    return {"status": "ok", "house": house}
+
 

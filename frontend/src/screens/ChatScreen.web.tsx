@@ -373,6 +373,77 @@ const INPUT_TIPS = [
   '🔮 Duygu belirt: Biraz tedirgin hissediyorum',
 ];
 
+const HOUSE_COLORS = {
+  gryffindor: { bg: '#740001', accent: '#D3A625', label: 'Gryffindor', symbol: '🦁' },
+  hufflepuff:  { bg: '#FFD800', accent: '#000000', label: 'Hufflepuff',  symbol: '🦡' },
+  ravenclaw:   { bg: '#0E1A40', accent: '#946B2D', label: 'Ravenclaw',   symbol: '🦅' },
+  slytherin:   { bg: '#1A472A', accent: '#AAAAAA', label: 'Slytherin',   symbol: '🐍' },
+};
+
+const HousePointsPanel: React.FC<{
+  points: Record<string, number>;
+  playerHouse: string;
+  side: 'left' | 'right';
+}> = ({ points, playerHouse, side }) => {
+  const houses = side === 'left'
+    ? ['gryffindor', 'hufflepuff']
+    : ['ravenclaw', 'slytherin'];
+
+  return (
+    <View style={{
+      position: 'absolute',
+      [side]: 0,
+      top: 0,
+      bottom: 0,
+      width: 72,
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 12,
+      zIndex: 10,
+      pointerEvents: 'none',
+    }}>
+      {houses.map(house => {
+        const cfg = HOUSE_COLORS[house as keyof typeof HOUSE_COLORS];
+        const isPlayer = house === playerHouse;
+        return (
+          <View key={house} style={{
+            width: 64,
+            backgroundColor: cfg.bg,
+            borderRadius: 12,
+            padding: 8,
+            alignItems: 'center',
+            borderWidth: isPlayer ? 2 : 0,
+            borderColor: isPlayer ? '#FFD700' : 'transparent',
+            shadowColor: isPlayer ? '#FFD700' : '#000',
+            shadowOpacity: isPlayer ? 0.8 : 0.3,
+            shadowRadius: 8,
+            elevation: isPlayer ? 6 : 2,
+          }}>
+            <Text style={{ fontSize: 20 }}>{cfg.symbol}</Text>
+            <Text style={{
+              color: cfg.accent,
+              fontSize: 10,
+              fontWeight: '700',
+              textAlign: 'center',
+              marginTop: 2,
+            }}>
+              {cfg.label.slice(0, 4).toUpperCase()}
+            </Text>
+            <Text style={{
+              color: '#FFFFFF',
+              fontSize: 18,
+              fontWeight: '900',
+              marginTop: 4,
+            }}>
+              {points[house] ?? 0}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
+
 export const ChatScreen = ({ navigation }: any) => {
 const {
   activeCharacter,
@@ -383,6 +454,10 @@ const {
   setMessages,
   isLoading,
   setIsLoading,
+  housePoints,
+  gameState,
+  setHousePoints,
+  setGameState,
 } = useAppContext();
 
   const userName = activeCharacter?.name || '';
@@ -509,10 +584,22 @@ const {
 
     try {
       const aiResponse = await sendAiMessage(nextMessages, userName, hogwartsHouse, sessionId, characterProfile);
-      setMessages([
-        ...nextMessages,
-        createMessage('ai', aiResponse.text, aiResponse.characterName),
-      ]);
+      if (aiResponse.housePoints) setHousePoints(aiResponse.housePoints);
+      if (aiResponse.gameState) setGameState(aiResponse.gameState);
+      if (aiResponse.narratorInjection) {
+        const injectionMsg: Message = {
+          id: `narrator-${Date.now()}`,
+          role: 'ai',
+          text: aiResponse.narratorInjection,
+          characterName: 'Hogwarts',
+        };
+        setMessages([injectionMsg, ...nextMessages, createMessage('ai', aiResponse.text, aiResponse.characterName)]);
+      } else {
+        setMessages([
+          ...nextMessages,
+          createMessage('ai', aiResponse.text, aiResponse.characterName),
+        ]);
+      }
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -535,6 +622,17 @@ const {
     setHogwartsHouse(house);
     setShowHouseSelection(false);
 
+    // Call backend to set player house
+    try {
+      await fetch('http://localhost:8001/api/set-house', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, house }),
+      });
+    } catch (error) {
+      console.error('Set house error:', error);
+    }
+
     const userMsg = createMessage('user', `${house}!`);
     const nextMessages = [...messages, userMsg];
     setMessages(nextMessages);
@@ -542,10 +640,22 @@ const {
 
     try {
       const response = await sendAiMessage(nextMessages, userName, house, sessionId, characterProfile);
-      setMessages([
-        ...nextMessages,
-        createMessage('ai', response.text, response.characterName),
-      ]);
+      if (response.housePoints) setHousePoints(response.housePoints);
+      if (response.gameState) setGameState(response.gameState);
+      if (response.narratorInjection) {
+        const injectionMsg: Message = {
+          id: `narrator-${Date.now()}`,
+          role: 'ai',
+          text: response.narratorInjection,
+          characterName: 'Hogwarts',
+        };
+        setMessages([injectionMsg, ...nextMessages, createMessage('ai', response.text, response.characterName)]);
+      } else {
+        setMessages([
+          ...nextMessages,
+          createMessage('ai', response.text, response.characterName),
+        ]);
+      }
     } catch (error) {
       console.error('AI Error:', error);
       setMessages([
@@ -583,6 +693,20 @@ const {
               <Text style={styles.headerSubtitle}>{NARRATOR_SUBTITLE}</Text>
             </View>
 
+            {/* Sol panel: Gryffindor + Hufflepuff */}
+            <HousePointsPanel
+              points={housePoints}
+              playerHouse={gameState?.playerHouse ?? 'gryffindor'}
+              side="left"
+            />
+
+            {/* Sağ panel: Ravenclaw + Slytherin */}
+            <HousePointsPanel
+              points={housePoints}
+              playerHouse={gameState?.playerHouse ?? 'gryffindor'}
+              side="right"
+            />
+
             <FlatList
               ref={flatListRef}
               data={messages}
@@ -593,7 +717,7 @@ const {
               }}
               maintainVisibleContentPosition={null}
               style={styles.list}
-              contentContainerStyle={styles.listContent}
+              contentContainerStyle={[styles.listContent, { paddingHorizontal: 80 }]}
               ItemSeparatorComponent={() => <View style={styles.messageSeparator} />}
               keyboardShouldPersistTaps="handled"
               inverted={false}

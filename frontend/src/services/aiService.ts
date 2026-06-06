@@ -5,6 +5,9 @@ export type Message = { id: string; role: 'user' | 'ai'; text: string; character
 type AIMessageResult = {
   text: string;
   characterName?: string;
+  housePoints?: { gryffindor: number; hufflepuff: number; ravenclaw: number; slytherin: number };
+  gameState?: { week: number; day: number; playerHouse: string };
+  narratorInjection?: string;
 };
 
 type ApiMessage = {
@@ -73,6 +76,9 @@ export async function sendMessage(
     const raw = await response.text();
     let assembled = '';
     let characterName = '';
+    let housePoints: { gryffindor: number; hufflepuff: number; ravenclaw: number; slytherin: number } | undefined;
+    let gameState: { week: number; day: number; playerHouse: string } | undefined;
+    let narratorInjection: string | undefined;
 
     for (const line of raw.split('\n')) {
       if (!line.startsWith('data: ')) {
@@ -85,8 +91,12 @@ export async function sendMessage(
       }
 
       try {
-        const parsed = JSON.parse(dataPart) as { type?: string; text?: string; character_name?: string };
-        if (parsed.type === 'chunk' && parsed.text) {
+        const parsed = JSON.parse(dataPart) as { type?: string; text?: string; character_name?: string; house_points?: any; game_state?: any; narrator_injection?: string };
+        if (parsed.type === 'meta') {
+          housePoints = parsed.house_points;
+          gameState = parsed.game_state;
+          narratorInjection = parsed.narrator_injection;
+        } else if (parsed.type === 'chunk' && parsed.text) {
           assembled += parsed.text;
         } else if (parsed.type === 'done' && parsed.character_name) {
           characterName = parsed.character_name;
@@ -100,7 +110,7 @@ export async function sendMessage(
       throw new Error('Empty streaming response from AI API');
     }
 
-    return { text: assembled, characterName: characterName || undefined };
+    return { text: assembled, characterName: characterName || undefined, housePoints, gameState, narratorInjection };
   } catch (error) {
     console.error('sendMessage failed:', error);
     throw error;

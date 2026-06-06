@@ -33,6 +33,10 @@ export type AppContextType = {
   setMessages: (msgs: Message[] | ((prev: Message[]) => Message[])) => void;
   isLoading: boolean;
   setIsLoading: (val: boolean) => void;
+  housePoints: { gryffindor: number; hufflepuff: number; ravenclaw: number; slytherin: number };
+  gameState: { week: number; day: number; playerHouse: string } | null;
+  setHousePoints: (p: any) => void;
+  setGameState: (s: any) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -58,6 +62,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [housePoints, setHousePoints] = useState<{ gryffindor: number; hufflepuff: number; ravenclaw: number; slytherin: number }>(
+    { gryffindor: 0, hufflepuff: 0, ravenclaw: 0, slytherin: 0 }
+  );
+  const [gameState, setGameState] = useState<{ week: number; day: number; playerHouse: string } | null>(null);
 
   useEffect(() => {
     localStorage.setItem('hp_characters', JSON.stringify(characters));
@@ -83,6 +91,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setMessages,
         isLoading,
         setIsLoading,
+        housePoints,
+        gameState,
+        setHousePoints,
+        setGameState,
       }}
     >
       {children}
