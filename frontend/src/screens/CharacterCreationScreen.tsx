@@ -38,7 +38,7 @@ const STEP_TITLES: Record<StepKey, string> = {
   origin: 'Kökenin?',
   height: 'Boyun?',
   hairColor: 'Saç rengin?',
-  fear: 'En büyük korkunun?',
+  fear: 'En büyük korkun?',
   hobby: 'Hobilerin neler?',
   secretTrait: 'Gizli bir özelliğin var...',
   attraction: 'Kime ilgi duyarsın?',

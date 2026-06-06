@@ -215,6 +215,142 @@ def check_sleep_trigger(message: str) -> bool:
     return any(kw in msg_lower for kw in sleep_keywords)
 
 
+def get_past_classes_today(session_id: str) -> list[dict]:
+    """
+    O gün saat geçmiş ama henüz attend/miss kaydı olmayan dersleri döner.
+    """
+    if not supabase:
+        return []
+
+    state = get_game_state(session_id)
+    week = state.get("current_week", 1)
+    day = state.get("current_day", 1)
+    hour = state.get("current_hour", 8)
+    schedule = get_todays_schedule(week, day)
+
+    pending = []
+    for cls in schedule:
+        cls_hour = int(cls["time"].split(":")[0])
+        if cls_hour >= hour:
+            continue
+        if not cls.get("house_penalty"):
+            continue
+
+        try:
+            resp = (
+                supabase.table("missed_class_log")
+                .select("id,attended")
+                .eq("session_id", session_id)
+                .eq("subject", cls["subject"])
+                .eq("week", week)
+                .eq("day", day)
+                .execute()
+            )
+            if resp.data:
+                continue
+        except Exception:
+            continue
+
+        pending.append({
+            "subject": cls["subject"],
+            "teacher": cls.get("teacher", ""),
+            "time": cls["time"],
+            "penalty": abs(cls["house_penalty"]["delta"]),
+            "week": week,
+            "day": day,
+        })
+
+    return pending
+
+
+def mark_class_attended(session_id: str, subject: str, week: int, day: int):
+    """Derse girildi olarak işaretle — ceza yok."""
+    if not supabase:
+        return
+    try:
+        supabase.table("missed_class_log").upsert({
+            "session_id": session_id,
+            "subject": subject,
+            "week": week,
+            "day": day,
+            "attended": True,
+            "penalty_applied": 0,
+        }, on_conflict="session_id,subject,week,day").execute()
+    except Exception as e:
+        logger.error(f"mark_class_attended error: {e}")
+
+
+def mark_class_missed(session_id: str, subject: str, week: int, day: int, penalty: int, player_house: str):
+    """Ders kaçırıldı — ceza uygula."""
+    if not supabase:
+        return
+    try:
+        supabase.table("missed_class_log").upsert({
+            "session_id": session_id,
+            "subject": subject,
+            "week": week,
+            "day": day,
+            "attended": False,
+            "penalty_applied": penalty,
+        }, on_conflict="session_id,subject,week,day").execute()
+        apply_missed_class(session_id, player_house, subject, -penalty)
+        logger.info(f"[{session_id}] Missed: {subject} -{penalty}")
+    except Exception as e:
+        logger.error(f"mark_class_missed error: {e}")
+
+
+def get_missed_classes_for_prompt(session_id: str) -> list[dict]:
+    """Bugün loglanmış kaçırılan dersleri döner (system prompt enjeksiyonu için)."""
+    if not supabase:
+        return []
+
+    state = get_game_state(session_id)
+    week = state.get("current_week", 1)
+    day = state.get("current_day", 1)
+
+    try:
+        resp = (
+            supabase.table("missed_class_log")
+            .select("subject, penalty_applied")
+            .eq("session_id", session_id)
+            .eq("week", week)
+            .eq("day", day)
+            .eq("attended", False)
+            .gt("penalty_applied", 0)
+            .execute()
+        )
+        schedule = get_todays_schedule(week, day)
+        teacher_map = {c["subject"]: c.get("teacher", "") for c in schedule}
+        return [
+            {
+                "subject": row["subject"],
+                "teacher": teacher_map.get(row["subject"], ""),
+                "penalty": row["penalty_applied"],
+            }
+            for row in (resp.data or [])
+        ]
+    except Exception as e:
+        logger.error(f"get_missed_classes_for_prompt error: {e}")
+        return []
+
+
+def build_missed_class_context(missed: list[dict]) -> str:
+    """Kaçırılan dersler için system prompt enjeksiyonu."""
+    if not missed:
+        return ""
+
+    lines = ["## KAÇIRILAN DERSLER (bu mesajda öğretmen tepkisini yansıt):"]
+    for m in missed:
+        teacher = m.get("teacher", "öğretmen")
+        lines.append(
+            f"- {m['subject']} ({teacher}): -{m['penalty']} puan kesildi. "
+            f"{teacher} bir sonraki karşılaşmada bunu hatırlayacak ve sitem edecek."
+        )
+    lines.append("Bu bilgiyi doğal bir şekilde sahneye yansıt — öğretmeni sitem ettir ama abartma.")
+
+    return "\n".join(lines)
+
+
 def build_current_time_context(session_id: str) -> str:
     """
     Mevcut zamanı ve o saat için ders/etkinlik bilgisini döner.

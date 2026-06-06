@@ -63,12 +63,12 @@ echo [5/5] Baslatiliyor...
 
 start "Hogwarts Backend" cmd /k ".venv\Scripts\uvicorn backend.main:app --reload --port 8001"
 timeout /t 3 /nobreak >nul
-start "Hogwarts Frontend" cmd /k "cd frontend && npx serve . -l 5173"
-timeout /t 2 /nobreak >nul
-start http://localhost:5173
+start "Hogwarts Frontend" cmd /k "cd frontend && npx expo start --web"
+timeout /t 5 /nobreak >nul
+start http://localhost:8081
 
 echo.
 echo  Hogwarts acildi!
-echo  Tarayicinizda http://localhost:5173 adresine gidin.
+echo  Tarayicinizda http://localhost:8081 adresine gidin.
 echo.
 pause

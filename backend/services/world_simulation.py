@@ -239,31 +239,132 @@ Başına [NARRATOR] koy."""
     return None
 
 
+async def analyze_class_attendance(session_id: str, conversation: list, player_house: str) -> list[dict]:
+    """
+    Sohbete bakarak oyuncunun hangi derslere girdiğini analiz et.
+    Sadece kesin kanıt varsa işlem yap. Şüphede hiçbir şey yapma.
+    """
+    from .house_points_service import (
+        get_past_classes_today,
+        mark_class_attended,
+        mark_class_missed,
+    )
+
+    pending = get_past_classes_today(session_id)
+    if not pending:
+        return []
+
+    if not conversation:
+        return []
+
+    recent = conversation[-15:]
+    conv_text = "\n".join(
+        f"{m['role'].upper()}: {m['content'][:400]}" for m in recent
+    )
+
+    subjects = [p["subject"] for p in pending]
+
+    prompt = f"""Aşağıdaki Hogwarts roleplay sohbetini analiz et.
+Oyuncu şu derslerin saatini geçirdi: {', '.join(subjects)}
+
+SOHBET:
+{conv_text}
+
+Her ders için oyuncunun o derse girip girmediğini belirle.
+
+Kurallar:
+- Sadece sohbette AÇIKÇA o derse girildiğine dair kanıt varsa "attended" yaz
+- Oyuncu o saatte AÇIKÇA başka yerdeyse (kütüphane, yemekhane, koridor vs.) "missed" yaz
+- Emin değilsen, kanıt yoksa "unknown" yaz — unknown olursa ceza YOK
+- Abartma, şüphede hep "unknown" seç
+
+SADECE JSON döndür:
+[
+  {{"subject": "Büyülü İksirler", "status": "attended"}},
+  {{"subject": "Uçuş Dersi", "status": "unknown"}}
+]"""
+
+    text = await _call_vertex(prompt, max_tokens=150, temperature=0.1)
+    if not text:
+        return []
+
+    results = []
+    try:
+        clean = text.strip()
+        if "```" in clean:
+            clean = clean.split("```")[1]
+            if clean.startswith("json"):
+                clean = clean[4:]
+        data = json.loads(clean.strip())
+        if not isinstance(data, list):
+            return []
+
+        pending_map = {p["subject"]: p for p in pending}
+
+        for item in data:
+            subject = item.get("subject", "")
+            status = item.get("status", "unknown")
+
+            if subject not in pending_map:
+                continue
+
+            cls = pending_map[subject]
+
+            if status == "attended":
+                mark_class_attended(session_id, subject, cls["week"], cls["day"])
+                results.append({"subject": subject, "status": "attended"})
+            elif status == "missed":
+                mark_class_missed(
+                    session_id, subject, cls["week"], cls["day"], cls["penalty"], player_house
+                )
+                results.append({
+                    "subject": subject,
+                    "status": "missed",
+                    "penalty": cls["penalty"],
+                    "teacher": cls["teacher"],
+                })
+
+    except Exception as e:
+        logger.error(f"analyze_class_attendance parse error: {e}")
+
+    return results
+
+
 async def run_point_simulation(
     session_id: str,
     conversation: list,
     player_house: str,
     week: int = 1,
     day: int = 1,
-) -> str | None:
-    """Ana fonksiyon. Sürpriz olay varsa döner."""
+) -> dict:
+    """Ana fonksiyon. Kaçırılan dersler ve sürpriz olayı döner."""
     import asyncio
 
-    async def _sim():
-        await asyncio.gather(
-            analyze_conversation_points(session_id, conversation, player_house),
-            simulate_world_events(session_id, week, day),
-            return_exceptions=True,
-        )
-
+    attendance_task = asyncio.create_task(
+        analyze_class_attendance(session_id, conversation, player_house)
+    )
     surprise_task = asyncio.create_task(maybe_generate_surprise_event(session_id, week, day))
-    await _sim()
 
+    await asyncio.gather(
+        analyze_conversation_points(session_id, conversation, player_house),
+        simulate_world_events(session_id, week, day),
+        return_exceptions=True,
+    )
+
+    attendance_results = []
     try:
-        return await surprise_task
+        attendance_results = await attendance_task
+    except Exception as e:
+        logger.error(f"analyze_class_attendance error: {e}")
+
+    surprise = None
+    try:
+        surprise = await surprise_task
     except Exception as e:
         logger.error(f"Surprise event error: {e}")
-        return None
+
+    missed = [r for r in attendance_results if r.get("status") == "missed"]
+    return {"missed": missed, "surprise": surprise}
 
 
 _scheduler_started = False

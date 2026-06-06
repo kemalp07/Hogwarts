@@ -20,6 +20,8 @@ from ..services.house_points_service import (
     check_sleep_trigger,
     build_current_time_context,
     get_todays_schedule,
+    get_missed_classes_for_prompt,
+    build_missed_class_context,
 )
 from ..services.world_simulation import run_point_simulation
 from ..services.relationship_service import analyze_relationship_changes, build_relationship_context
@@ -165,6 +167,8 @@ async def chat_endpoint(request: Request):
     if sleep_triggered:
         advance_hour(session_id, hours=14)
 
+    missed_context = build_missed_class_context(get_missed_classes_for_prompt(session_id))
+
     game_state = get_game_state(session_id)
     time_context = build_current_time_context(session_id)
 
@@ -197,6 +201,7 @@ async def chat_endpoint(request: Request):
         character_profile=character_profile,
         relationship_context=relationship_context,
         time_context=time_context,
+        missed_context=missed_context,
     )
 
     model = body.get("model") or os.getenv("VERTEX_AI_MODEL", "gemini-2.0-flash-001")
@@ -338,9 +343,9 @@ async def run_simulation_endpoint(request: Request):
         return JSONResponse(content={"status": "error", "detail": "session_id required"})
 
     logger.info(f"[{session_id}] Starting simulation house={player_house} w={week} d={day}")
-    surprise = None
+    sim_result = {"missed": [], "surprise": None}
     try:
-        surprise = await run_point_simulation(session_id, conversation, player_house, week, day)
+        sim_result = await run_point_simulation(session_id, conversation, player_house, week, day)
         logger.info(f"[{session_id}] Simulation complete")
     except Exception as e:
         logger.error(f"Simulation error: {e}", exc_info=True)
@@ -356,10 +361,17 @@ async def run_simulation_endpoint(request: Request):
         logger.error(f"Relationship analysis error: {e}")
 
     points = get_house_points(session_id)
+    missed_classes = sim_result.get("missed") or []
+    missed_text = ""
+    if missed_classes:
+        parts = [f"{m['subject']} ({m['teacher']}) -{m['penalty']} puan" for m in missed_classes]
+        missed_text = "Kaçırılan dersler: " + ", ".join(parts)
+
     return JSONResponse(content={
         "status": "ok",
         "house_points": points,
-        "surprise_event": surprise,
+        "surprise_event": sim_result.get("surprise"),
+        "missed_classes": missed_text,
     })
 
 
