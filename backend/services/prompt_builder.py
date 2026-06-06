@@ -317,6 +317,7 @@ async def build_prompt(user_name: str, character_id: str, location_id: str, mess
 - Occasionally show the world moving without the user — background conversations, distant sounds, seasonal changes
 - Never end with a direct question like "Ne yapmak istersin?" — show the world and let the user decide naturally
 - A response can sometimes just be a beautiful, atmospheric scene with no plot hook
+- Occasionally remind the player of upcoming classes or events naturally through narrator or characters. For example: at the end of a dinner scene, a character might mention tomorrow's schedule, or the narrator might note the hour getting late before classes. Do this organically — not every response, just when it fits the scene.
 
 ### RESPONSE FORMAT — MANDATORY:
 Every response MUST use these tags. No exceptions.
@@ -358,10 +359,17 @@ Every response MUST use these tags. No exceptions.
 [CHARACTER:Name] Use this for any other character not listed above.
 
 Rules:
-- Every paragraph must start with a tag
+- TAGS MUST ALWAYS BE AT THE VERY START OF A NEW LINE. Never mid-sentence.
+- WRONG: "Ron, yapma öyle," [HARRY] diyerek arkadaşının omzuna vurdu
+- CORRECT:
+[NARRATOR] Ron'a dönerek arkadaşının omzuna hafifçe vurdu.
+[HARRY] "Ron, yapma öyle. Önemseme onu."
+- Every paragraph must start with a tag on its own or with content immediately after
+- Never write a tag inside a sentence or after dialogue
 - Never mix narrator and character in the same paragraph
-- Always put dialogue inside the character's own tag block
+- Always put dialogue AND the character's physical actions inside that character's own tag block
 - Never skip the tag even for short reactions
+- If a character speaks AND does an action, put both in the same tag block
 """
     system_content += proactive_instruction
 
