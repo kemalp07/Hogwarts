@@ -149,6 +149,17 @@ async def chat_endpoint(request: Request):
 
     # Game state & house points → streaming meta'ya eklenecek
     game_state = get_game_state(session_id)
+
+    # last_activity_at güncelle — scheduler sadece aktif sessionlara drift uygulasın
+    if supabase:
+        try:
+            supabase.table("game_state").upsert(
+                {"session_id": session_id, "last_activity_at": datetime.utcnow().isoformat()},
+                on_conflict="session_id"
+            ).execute()
+        except Exception:
+            pass
+
     house_points = get_house_points(session_id)
 
     # allow empty message for initial opening prompts; message may be empty string

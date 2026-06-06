@@ -226,11 +226,13 @@ _scheduler_lock = threading.Lock()
 
 
 def _get_all_active_sessions() -> list[str]:
-    """Son 2 saatte aktif olan sessionları çek."""
+    """Son 5 dakikada aktif olan sessionları çek."""
     if not supabase:
         return []
     try:
-        resp = supabase.table("game_state").select("session_id").execute()
+        from datetime import timedelta
+        cutoff = (datetime.utcnow() - timedelta(minutes=5)).isoformat()
+        resp = supabase.table("game_state").select("session_id").gte("last_activity_at", cutoff).execute()
         return [row["session_id"] for row in (resp.data or [])]
     except Exception as e:
         logger.error(f"_get_all_active_sessions error: {e}")
@@ -250,15 +252,31 @@ def _apply_organic_drift():
     for session_id in sessions:
         try:
             current = _get_points(session_id)
+
+            max_points = max(current.values()) if current.values() else 0
+            min_points = min(current.values()) if current.values() else 0
+            spread = max_points - min_points
+
             changes = []
             for house in HOUSES:
                 if random.random() > 0.6:
                     continue
+
                 magnitude = random.choice([2, 3, 4, 5])
                 direction = random.choice([-1, 1])
+
+                if spread > 40:
+                    house_pts = current.get(house, 0)
+                    if house_pts == max_points and direction == 1:
+                        direction = -1
+                    if house_pts == min_points and direction == -1:
+                        direction = 1
+                    magnitude = random.choice([2, 3])
+
                 delta = magnitude * direction
                 if current.get(house, 0) + delta < 0:
                     delta = abs(delta)
+
                 changes.append({
                     "house": house,
                     "delta": delta,
