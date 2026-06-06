@@ -373,69 +373,139 @@ const INPUT_TIPS = [
   '🔮 Duygu belirt: Biraz tedirgin hissediyorum',
 ];
 
-const HOUSE_COLORS = {
-  gryffindor: { bg: '#740001', accent: '#D3A625', label: 'Gryffindor', symbol: '🦁' },
-  hufflepuff:  { bg: '#FFD800', accent: '#000000', label: 'Hufflepuff',  symbol: '🦡' },
-  ravenclaw:   { bg: '#0E1A40', accent: '#946B2D', label: 'Ravenclaw',   symbol: '🦅' },
-  slytherin:   { bg: '#1A472A', accent: '#AAAAAA', label: 'Slytherin',   symbol: '🐍' },
+const HOUSE_CONFIG: Record<string, { label: string; short: string; color: string; logoKey: string }> = {
+  gryffindor: { label: 'Gryffindor', short: 'GRIFF',   color: '#e8b86d', logoKey: 'gryffindor' },
+  hufflepuff:  { label: 'Hufflepuff', short: 'HUFF',    color: '#f0d060', logoKey: 'hufflepuff' },
+  ravenclaw:   { label: 'Ravenclaw',  short: 'RAVEN',   color: '#7eb8e8', logoKey: 'ravenclaw'  },
+  slytherin:   { label: 'Slytherin',  short: 'SLYTH',   color: '#7acf7a', logoKey: 'slytherin'  },
 };
 
-const HousePointsPanel: React.FC<{
-  points: Record<string, number>;
+// Logo asset map — sen kendi asset path'lerini buraya yaz
+// Geçici olarak emoji kullan, logolar gelince değiştir
+const HOUSE_LOGOS: Record<string, any> = {
+  gryffindor: require('../../assets/houses/gryffindor.png'),
+  ravenclaw:  require('../../assets/houses/ravenclaw.png'),
+  hufflepuff: require('../../assets/houses/hufflepuff.png'),
+  slytherin:  require('../../assets/houses/slytherin.png'),
+};
+
+const HOUSE_SCORE_COLOR: Record<string, string> = {
+  gryffindor: '#e8b86d',
+  hufflepuff:  '#f0d060',
+  ravenclaw:   '#7eb8e8',
+  slytherin:   '#7acf7a',
+};
+
+const HOUSE_SHORT: Record<string, string> = {
+  gryffindor: 'GRIFF',
+  hufflepuff:  'HUFF',
+  ravenclaw:   'RAVEN',
+  slytherin:   'SLYTH',
+};
+
+const RANK_ACCENT = ['#c9a84c', '#aaaaaa', '#8B6914', 'rgba(255,255,255,0.15)'];
+
+const HOUSE_EMOJIS: Record<string, string> = {
+  gryffindor: '🦁',
+  hufflepuff: '🦡',
+  ravenclaw:  '🦅',
+  slytherin:  '🐍',
+};
+
+interface HousePanelProps {
+  displayPoints: Record<string, number>;
+  housePoints: Record<string, number>;
   playerHouse: string;
   side: 'left' | 'right';
-}> = ({ points, playerHouse, side }) => {
-  const houses = side === 'left'
-    ? ['gryffindor', 'hufflepuff']
-    : ['ravenclaw', 'slytherin'];
+  headerHeight: number;
+}
+
+const HousePointsPanel: React.FC<HousePanelProps> = ({
+  displayPoints, housePoints, playerHouse, side, headerHeight
+}) => {
+  const sorted = Object.entries(housePoints)
+    .sort((a, b) => b[1] - a[1])
+    .map(([h]) => h);
+
+  const indices = side === 'left' ? [0, 1] : [2, 3];
 
   return (
-    <View style={{
-      position: 'absolute',
-      [side]: 0,
-      top: 0,
-      bottom: 0,
-      width: 72,
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 12,
-      zIndex: 10,
-      pointerEvents: 'none',
-    }}>
-      {houses.map(house => {
-        const cfg = HOUSE_COLORS[house as keyof typeof HOUSE_COLORS];
-        const isPlayer = house === playerHouse;
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        top: headerHeight,
+        [side]: 0,
+        flexDirection: 'row',
+        paddingTop: 12,
+        paddingHorizontal: 8,
+        gap: 8,
+        zIndex: 20,
+        alignItems: 'flex-start',
+      }}
+    >
+      {indices.map((rankIdx) => {
+        const house = sorted[rankIdx];
+        if (!house) return null;
+        const rank = rankIdx + 1;
+        const isPlayer = house === playerHouse?.toLowerCase();
+        const accent = RANK_ACCENT[rankIdx];
+        const scoreColor = HOUSE_SCORE_COLOR[house] ?? '#ffffff';
+
         return (
-          <View key={house} style={{
-            width: 64,
-            backgroundColor: cfg.bg,
-            borderRadius: 12,
-            padding: 8,
-            alignItems: 'center',
-            borderWidth: isPlayer ? 2 : 0,
-            borderColor: isPlayer ? '#FFD700' : 'transparent',
-            shadowColor: isPlayer ? '#FFD700' : '#000',
-            shadowOpacity: isPlayer ? 0.8 : 0.3,
-            shadowRadius: 8,
-            elevation: isPlayer ? 6 : 2,
-          }}>
-            <Text style={{ fontSize: 20 }}>{cfg.symbol}</Text>
+          <View
+            key={house}
+            style={{
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            {/* Rank numarası */}
+            <View style={{
+              position: 'absolute',
+              top: 0, left: 0,
+              width: 18, height: 18,
+              borderRadius: 9,
+              backgroundColor: 'rgba(0,0,0,0.55)',
+              borderWidth: 0.5,
+              borderColor: accent,
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1,
+            }}>
+              <Text style={{
+                fontSize: 9,
+                fontWeight: '700',
+                color: accent,
+                fontFamily: 'Cinzel, serif',
+              }}>
+                {rank}
+              </Text>
+            </View>
+
+            {/* Logo — büyük, şeffaf */}
+            <Image
+              source={HOUSE_LOGOS[house]}
+              style={{
+                width: 80,
+                height: 80,
+                resizeMode: 'contain',
+                opacity: isPlayer ? 1.0 : 0.8,
+              }}
+            />
+
+            {/* Puan */}
             <Text style={{
-              color: cfg.accent,
-              fontSize: 10,
+              fontSize: 22,
               fontWeight: '700',
-              textAlign: 'center',
-              marginTop: 2,
+              color: scoreColor,
+              fontFamily: 'Cinzel, serif',
+              lineHeight: 24,
+              textShadowColor: 'rgba(0,0,0,0.9)',
+              textShadowOffset: { width: 0, height: 1 },
+              textShadowRadius: 4,
             }}>
-              {cfg.label.slice(0, 4).toUpperCase()}
-            </Text>
-            <Text style={{
-              color: '#FFFFFF',
-              fontSize: 18,
-              fontWeight: '900',
-              marginTop: 4,
-            }}>
-              {points[house] ?? 0}
+              {displayPoints[house] ?? 0}
             </Text>
           </View>
         );
@@ -480,6 +550,48 @@ const {
     );
     setCharacters(updatedCharacters);
   };
+
+  // House points animation state
+  const prevHousePoints = useRef({ gryffindor: 0, hufflepuff: 0, ravenclaw: 0, slytherin: 0 });
+  const [displayPoints, setDisplayPoints] = useState({ gryffindor: 0, hufflepuff: 0, ravenclaw: 0, slytherin: 0 });
+  const [playerHouse, setPlayerHouse] = useState<string>('gryffindor');
+  const animationRefs = useRef<Record<string, any>>({});
+
+  const animatePointChange = (house: string, from: number, to: number) => {
+    if (animationRefs.current[house]) {
+      clearInterval(animationRefs.current[house]);
+    }
+    const duration = 1200; // ms — yavaş ve akıcı
+    const steps = 60;
+    const stepTime = duration / steps;
+    let current = 0;
+    animationRefs.current[house] = setInterval(() => {
+      current++;
+      const eased = from + (to - from) * (1 - Math.pow(1 - current / steps, 3)); // ease-out cubic
+      setDisplayPoints(prev => ({ ...prev, [house]: Math.round(eased) }));
+      if (current >= steps) {
+        clearInterval(animationRefs.current[house]);
+        setDisplayPoints(prev => ({ ...prev, [house]: to }));
+      }
+    }, stepTime);
+  };
+
+  useEffect(() => {
+    (Object.keys(housePoints) as Array<keyof typeof housePoints>).forEach(house => {
+      const prev = prevHousePoints.current[house];
+      const next = housePoints[house];
+      if (prev !== next) {
+        animatePointChange(house, prev, next);
+      }
+    });
+    prevHousePoints.current = { ...housePoints };
+  }, [housePoints]);
+
+  useEffect(() => {
+    if (gameState?.playerHouse) {
+      setPlayerHouse(gameState.playerHouse);
+    }
+  }, [gameState]);
 
   // Redirect to onboarding if no active character
   useEffect(() => {
@@ -687,25 +799,29 @@ const {
           style={styles.keyboardAvoidingView}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={styles.screen}>
+          <View style={[styles.screen, { position: 'relative' }]}>
+            {/* Sol panel: 1. ve 2. sıra */}
+            <HousePointsPanel
+              displayPoints={displayPoints}
+              housePoints={housePoints}
+              playerHouse={hogwartsHouse}
+              side="left"
+              headerHeight={64}
+            />
+
+            {/* Sağ panel: 3. ve 4. sıra */}
+            <HousePointsPanel
+              displayPoints={displayPoints}
+              housePoints={housePoints}
+              playerHouse={hogwartsHouse}
+              side="right"
+              headerHeight={64}
+            />
+
             <View style={styles.header}>
               <Text style={styles.headerTitle}>{NARRATOR_NAME}</Text>
               <Text style={styles.headerSubtitle}>{NARRATOR_SUBTITLE}</Text>
             </View>
-
-            {/* Sol panel: Gryffindor + Hufflepuff */}
-            <HousePointsPanel
-              points={housePoints}
-              playerHouse={gameState?.playerHouse ?? 'gryffindor'}
-              side="left"
-            />
-
-            {/* Sağ panel: Ravenclaw + Slytherin */}
-            <HousePointsPanel
-              points={housePoints}
-              playerHouse={gameState?.playerHouse ?? 'gryffindor'}
-              side="right"
-            />
 
             <FlatList
               ref={flatListRef}
@@ -717,7 +833,7 @@ const {
               }}
               maintainVisibleContentPosition={null}
               style={styles.list}
-              contentContainerStyle={[styles.listContent, { paddingHorizontal: 80 }]}
+              contentContainerStyle={styles.listContent}
               ItemSeparatorComponent={() => <View style={styles.messageSeparator} />}
               keyboardShouldPersistTaps="handled"
               inverted={false}
@@ -872,7 +988,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   listContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 96,
     paddingTop: 16,
     paddingBottom: 16,
     flexGrow: 1,
