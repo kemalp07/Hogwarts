@@ -14,8 +14,11 @@ from ..services.house_points_service import (
     get_game_state,
     check_inactivity_advance,
     build_narrator_day_message,
-    apply_player_action,
     advance_day,
+    advance_hour,
+    increment_message_count,
+    check_sleep_trigger,
+    build_current_time_context,
 )
 from ..services.world_simulation import run_point_simulation
 from ..services.relationship_service import analyze_relationship_changes, build_relationship_context
@@ -144,12 +147,6 @@ async def chat_endpoint(request: Request):
 
     # Inactivity kontrolü → otomatik gün geçişi
     day_advanced = check_inactivity_advance(session_id, threshold_minutes=30)
-    narrator_injection = None
-    if day_advanced:
-        narrator_injection = build_narrator_day_message(session_id)
-
-    # Game state & house points → streaming meta'ya eklenecek
-    game_state = get_game_state(session_id)
 
     # last_activity_at güncelle — scheduler sadece aktif sessionlara drift uygulasın
     if supabase:
@@ -160,6 +157,19 @@ async def chat_endpoint(request: Request):
             ).execute()
         except Exception as e:
             logger.error(f"last_activity_at update error: {e}")
+
+    increment_message_count(session_id)
+
+    sleep_triggered = check_sleep_trigger(message)
+    if sleep_triggered:
+        advance_hour(session_id, hours=14)
+
+    game_state = get_game_state(session_id)
+    time_context = build_current_time_context(session_id)
+
+    narrator_injection = None
+    if game_state.get("current_hour") == 8 or sleep_triggered or day_advanced:
+        narrator_injection = build_narrator_day_message(session_id)
 
     house_points = get_house_points(session_id)
 
@@ -185,6 +195,7 @@ async def chat_endpoint(request: Request):
         memories=memories,
         character_profile=character_profile,
         relationship_context=relationship_context,
+        time_context=time_context,
     )
 
     model = body.get("model") or os.getenv("VERTEX_AI_MODEL", "gemini-2.0-flash-001")

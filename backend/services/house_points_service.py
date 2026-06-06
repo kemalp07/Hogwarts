@@ -140,6 +140,133 @@ def get_todays_schedule(week: int, day: int) -> list:
     return []
 
 
+def advance_hour(session_id: str, hours: int = 1) -> dict:
+    """Saati ilerlet. Gece geçince güne ilerle."""
+    state = get_game_state(session_id)
+    hour = state.get("current_hour", 8)
+    week = state.get("current_week", 1)
+    day = state.get("current_day", 1)
+
+    hour += hours
+
+    if hour >= 23:
+        hour = 8
+        day += 1
+        if day > 7:
+            day = 1
+            week += 1
+
+    if supabase:
+        try:
+            supabase.table("game_state").upsert({
+                "session_id": session_id,
+                "current_week": week,
+                "current_day": day,
+                "current_hour": hour,
+                "last_activity_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat(),
+            }, on_conflict="session_id").execute()
+        except Exception as e:
+            logger.error(f"advance_hour error: {e}")
+
+    return get_game_state(session_id)
+
+
+def get_message_count(session_id: str) -> int:
+    """O günkü mesaj sayısını çek."""
+    if not supabase:
+        return 0
+    try:
+        resp = supabase.table("game_state").select("daily_message_count").eq("session_id", session_id).execute()
+        return (resp.data or [{}])[0].get("daily_message_count", 0)
+    except Exception:
+        return 0
+
+
+def increment_message_count(session_id: str) -> int:
+    """Mesaj sayacını artır. 8'in katına gelince 1 saat ilerlet."""
+    if not supabase:
+        return 0
+    try:
+        count = get_message_count(session_id) + 1
+        supabase.table("game_state").upsert({
+            "session_id": session_id,
+            "daily_message_count": count,
+            "updated_at": datetime.utcnow().isoformat(),
+        }, on_conflict="session_id").execute()
+
+        if count % 8 == 0:
+            advance_hour(session_id, 1)
+            logger.info(f"[{session_id}] Time advanced — message count: {count}")
+
+        return count
+    except Exception as e:
+        logger.error(f"increment_message_count error: {e}")
+        return 0
+
+
+def check_sleep_trigger(message: str) -> bool:
+    """Oyuncu uyumak istedi mi?"""
+    sleep_keywords = [
+        "uyumak istiyorum", "yatıyorum", "uyuyorum", "yatmak istiyorum",
+        "geceyi geçir", "sabah olsun", "uyuyayım", "yatayım",
+        "yoruldum yatıyorum", "odama gidiyorum",
+    ]
+    msg_lower = message.lower()
+    return any(kw in msg_lower for kw in sleep_keywords)
+
+
+def build_current_time_context(session_id: str) -> str:
+    """
+    Mevcut zamanı ve o saat için ders/etkinlik bilgisini döner.
+    System prompt'a enjekte edilir.
+    """
+    state = get_game_state(session_id)
+    week = state.get("current_week", 1)
+    day = state.get("current_day", 1)
+    hour = state.get("current_hour", 8)
+
+    day_names = {1: "Pazartesi", 2: "Salı", 3: "Çarşamba", 4: "Perşembe",
+                 5: "Cuma", 6: "Cumartesi", 7: "Pazar"}
+    day_name = day_names.get(day, "Gün")
+
+    schedule = get_todays_schedule(week, day)
+
+    current_class = None
+    upcoming_class = None
+    missed_classes = []
+
+    for cls in schedule:
+        cls_hour = int(cls["time"].split(":")[0])
+        if cls_hour == hour:
+            current_class = cls
+        elif cls_hour == hour + 1:
+            upcoming_class = cls
+        elif cls_hour < hour:
+            missed_classes.append(cls)
+
+    lines = [f"## OYUN ZAMANI: {day_name}, Saat {hour:02d}:00, {week}. Hafta"]
+
+    if current_class:
+        lines.append(
+            f"ŞU AN DERS SAATİ: {current_class['subject']} ({current_class['teacher']}) — oyuncu bu derste olmalı!"
+        )
+
+    if upcoming_class:
+        lines.append(
+            f"1 SAAT SONRA: {upcoming_class['subject']} ({upcoming_class['teacher']}) — yaklaşan ders"
+        )
+
+    if missed_classes and hour > 9:
+        missed_names = [c["subject"] for c in missed_classes]
+        lines.append(f"KAÇIRILAN DERSLER: {', '.join(missed_names)} — öğretmenler bunu hatırlıyor")
+
+    if not schedule:
+        lines.append("Bugün ders yok — serbest zaman.")
+
+    return "\n".join(lines)
+
+
 def advance_day(session_id: str) -> dict:
     """
     Günü ilerlet. Micro-drift + event spike uygula.
