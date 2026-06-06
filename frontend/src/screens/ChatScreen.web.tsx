@@ -617,6 +617,7 @@ const {
     () => !activeCharacter?.house
   );
   const [tipIndex, setTipIndex] = useState(0);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
 
@@ -636,25 +637,30 @@ const {
   }, []);
 
   useEffect(() => {
-    if (!activeCharacter) return;
-    if (messages.length > 0) return;
+    if (!sessionId) return;
+    if (historyLoaded) return;
 
     const loadHistory = async () => {
       try {
         const res = await fetch(`http://localhost:8001/api/history?session_id=${encodeURIComponent(sessionId)}`);
         if (!res.ok) return;
         const data = await res.json();
-        const msgs = data.messages || [];
-        
+        const msgs: any[] = data.messages || [];
+
+        setHistoryLoaded(true);
+
         if (msgs.length === 0) {
-          return; // no history, house selection will show if needed
+          return;
         }
 
         const loaded: Message[] = msgs.map((m: any) => ({
           id: Math.random().toString(36).slice(2),
           role: m.role === 'user' ? 'user' : 'ai',
           text: m.content,
+          characterName: m.character_name || undefined,
+          tag: m.tag || undefined,
         }));
+
         setMessages(loaded);
         setShowHouseSelection(false);
       } catch (e) {
@@ -663,7 +669,7 @@ const {
     };
 
     loadHistory();
-  }, [activeCharacter, sessionId]);
+  }, [sessionId, historyLoaded]);
 
   // background video removed: using solid color background for web
 

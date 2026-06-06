@@ -1,7 +1,5 @@
 import logging
-logger = logging.getLogger(__name__)
 from typing import Optional
-import logging
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -26,6 +24,7 @@ from pathlib import Path
 from datetime import datetime
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 MAX_HISTORY_MESSAGES = 30
 
