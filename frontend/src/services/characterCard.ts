@@ -14,7 +14,7 @@ type CharacterCardData = {
 
 const card = characterCardData as CharacterCardData;
 
-const SORTING_HAT_SCENE = `Hogwarts Ekspresi bugün ilk kez yolculuk yapıyor — en azından senin için. 1991 yılı, Eylül'ün ilk günü. Tren İskoçya'nın sisli dağlarında ilerlerken pencereden uzaklara bakıyorsun. Bugün her şey değişecek.
+const SORTING_HAT_SCENE = `[SORTING_HAT] Hogwarts Ekspresi bugün ilk kez yolculuk yapıyor — en azından senin için. 1991 yılı, Eylül'ün ilk günü. Tren İskoçya'nın sisli dağlarında ilerlerken pencereden uzaklara bakıyorsun. Bugün her şey değişecek.
 
 Saatler sonra dev meşe kapılardan içeri adım atıyorsun. Büyük Salon'un büyülü tavanında yıldızlar parlıyor, yüzlerce mum havada asılı duruyor. Diğer birinci sınıf öğrencileriyle birlikte uzun masaların önünde sıralanıyorsunuz.
 

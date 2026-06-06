@@ -9,7 +9,7 @@ import {
   ImageBackground,
   Image,
   ScrollView,
-  Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useAppContext, Character } from '../context/AppContext';
 
@@ -19,6 +19,7 @@ type OnboardingScreenProps = {
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
   const { characters, setCharacters, setActiveCharacter } = useAppContext();
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -38,42 +39,27 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
     navigation.navigate('CharacterCreation');
   };
 
-  const handleDeleteCharacter = (character: Character) => {
-    Alert.alert(
-      'Karakteri Sil',
-      'Bu karakteri ve tüm sohbet geçmişini silmek istediğine emin misin?',
-      [
-        {
-          text: 'İptal',
-          style: 'cancel',
-        },
-        {
-          text: 'Sil',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Delete messages from backend
-              await fetch(`http://localhost:8001/api/messages?session_id=${encodeURIComponent(character.sessionId)}`, {
-                method: 'DELETE',
-              });
+  const handleDeleteCharacter = (character: any) => {
+    setDeleteTarget(character);
+  };
 
-              // Remove character from array
-              const updatedCharacters = characters.filter(c => c.id !== character.id);
-              setCharacters(updatedCharacters);
-
-              // Clear active character if it was the deleted one
-              const activeId = localStorage.getItem('hp_active_character_id');
-              if (activeId === character.id) {
-                localStorage.removeItem('hp_active_character_id');
-                setActiveCharacter(null);
-              }
-            } catch (error) {
-              console.error('Delete error:', error);
-            }
-          },
-        },
-      ]
-    );
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await fetch(`http://localhost:8001/api/messages?session_id=${encodeURIComponent(deleteTarget.sessionId)}`, {
+        method: 'DELETE',
+      });
+      const updated = characters.filter((c: any) => c.id !== deleteTarget.id);
+      setCharacters(updated);
+      localStorage.setItem('hp_characters', JSON.stringify(updated));
+      const activeId = localStorage.getItem('hp_active_character_id');
+      if (activeId === deleteTarget.id) {
+        localStorage.removeItem('hp_active_character_id');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setDeleteTarget(null);
   };
 
   return (
@@ -139,6 +125,24 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
         </ScrollView>
       </View>
       </ImageBackground>
+      {deleteTarget && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Karakteri Sil</Text>
+            <Text style={styles.modalText}>
+              "{deleteTarget.name}" ve tüm sohbet geçmişi silinecek. Emin misin?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setDeleteTarget(null)}>
+                <Text style={styles.modalCancelText}>İptal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalDelete} onPress={confirmDelete}>
+                <Text style={styles.modalDeleteText}>Sil</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -282,10 +286,9 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   emptyButton: {
-    width: '60%',
-    maxWidth: 320,
     alignSelf: 'center',
     height: 52,
+    paddingHorizontal: 32,
     backgroundColor: 'rgba(120, 50, 8, 0.95)',
     borderRadius: 12,
     borderWidth: 1,
@@ -293,13 +296,74 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 24,
-    paddingHorizontal: 24,
   },
   emptyButtonText: {
     color: '#F5E6C8',
     fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 2,
+    letterSpacing: 1,
     fontFamily: 'Cinzel, serif',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  modalBox: {
+    backgroundColor: 'rgba(15, 10, 5, 0.98)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 220, 180, 0.2)',
+    borderRadius: 16,
+    padding: 28,
+    width: '85%',
+    maxWidth: 380,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#F5E6C8',
+    fontFamily: 'Cinzel, serif',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 14,
+    color: 'rgba(245, 220, 180, 0.7)',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancel: {
+    flex: 1,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 220, 180, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: 'rgba(245, 220, 180, 0.6)',
+    fontSize: 15,
+  },
+  modalDelete: {
+    flex: 1,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: 'rgba(150, 20, 20, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalDeleteText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

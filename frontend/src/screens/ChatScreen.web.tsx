@@ -62,8 +62,9 @@ const CHARACTER_AVATARS: Record<string, any> = {
 };
 
 const TAG_AVATARS: Record<string, any> = {
-  'NARRATOR': require('../../assets/characters/sorting_hat.png'),
+  'NARRATOR': require('../../assets/hogwarts_crest.png'),
   'UNKNOWN': require('../../assets/characters/unknown.png'),
+  'SORTING_HAT': require('../../assets/characters/sorting_hat.png'),
   'HARRY': require('../../assets/characters/harry.png'),
   'HERMIONE': require('../../assets/characters/hermione.png'),
   'RON': require('../../assets/characters/ron.png'),
