@@ -471,7 +471,7 @@ async def set_house_endpoint(request: Request):
                 "session_id": session_id,
                 "player_house": house,
                 "current_week": 1,
-                "current_day": 1,
+                "current_day": 7,
                 "current_hour": 20,
                 "daily_message_count": 0,
             },
