@@ -12,13 +12,14 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useAppContext, Character, loadAllCharactersFromDB } from '../context/AppContext';
+import { t } from '../i18n/translations';
 
 type OnboardingScreenProps = {
   navigation: any;
 };
 
 export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }) => {
-  const { characters, setCharacters, setActiveCharacter } = useAppContext();
+  const { characters, setCharacters, setActiveCharacter, language, setLanguage } = useAppContext();
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
   useEffect(() => {
@@ -87,17 +88,32 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
           style={styles.crestImage}
         />
 
-        <Text style={styles.title}>Hogwarts'a Hoş Geldin</Text>
+        <View style={styles.languageToggle}>
+          <Pressable
+            style={[styles.langBtn, language === 'tr' && styles.langBtnActive]}
+            onPress={() => setLanguage('tr')}
+          >
+            <Text style={[styles.langBtnText, language === 'tr' && styles.langBtnTextActive]}>TR</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.langBtn, language === 'en' && styles.langBtnActive]}
+            onPress={() => setLanguage('en')}
+          >
+            <Text style={[styles.langBtnText, language === 'en' && styles.langBtnTextActive]}>EN</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.title}>{t(language, 'welcome')}</Text>
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           {characters.length === 0 ? (
             <View style={styles.centerContent}>
-              <Text style={styles.subtitle}>Henüz karakterin yok</Text>
+              <Text style={styles.subtitle}>{t(language, 'noCharacter')}</Text>
               <Pressable
                 style={styles.emptyButton}
                 onPress={handleNewCharacter}
               >
-                <Text style={styles.emptyButtonText}>Yeni Karakter Oluştur</Text>
+                <Text style={styles.emptyButtonText}>{t(language, 'newCharacter')}</Text>
               </Pressable>
             </View>
           ) : (
@@ -110,7 +126,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
                   >
                     <Text style={styles.characterName}>{character.name}</Text>
                     <View style={styles.characterDetails}>
-                      <Text style={styles.characterHouse}>{character.house || 'Ev seçilmedi'}</Text>
+                      <Text style={styles.characterHouse}>{character.house || t(language, 'houseNotSelected')}</Text>
                       <Text style={styles.characterTraits}>
                         {character.traits.slice(0, 2).join(', ')}
                       </Text>
@@ -129,7 +145,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
                   style={styles.newCharacterButton}
                   onPress={handleNewCharacter}
                 >
-                  <Text style={styles.newCharacterButtonText}>+ Yeni Karakter</Text>
+                  <Text style={styles.newCharacterButtonText}>{t(language, 'addCharacter')}</Text>
                 </Pressable>
               )}
             </View>
@@ -140,16 +156,16 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ navigation }
       {deleteTarget && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Karakteri Sil</Text>
+            <Text style={styles.modalTitle}>{t(language, 'deleteCharacter')}</Text>
             <Text style={styles.modalText}>
-              "{deleteTarget.name}" ve tüm sohbet geçmişi silinecek. Emin misin?
+              {t(language, 'deleteConfirm', deleteTarget.name)}
             </Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => setDeleteTarget(null)}>
-                <Text style={styles.modalCancelText}>İptal</Text>
+                <Text style={styles.modalCancelText}>{t(language, 'cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalDelete} onPress={confirmDelete}>
-                <Text style={styles.modalDeleteText}>Sil</Text>
+                <Text style={styles.modalDeleteText}>{t(language, 'delete')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -179,6 +195,31 @@ const styles = StyleSheet.create({
     width: 350,
     height: 350,
     marginBottom: 175,
+  },
+  languageToggle: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  langBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 220, 180, 0.3)',
+  },
+  langBtnActive: {
+    backgroundColor: 'rgba(120, 50, 8, 0.9)',
+    borderColor: 'rgba(245, 220, 180, 0.6)',
+  },
+  langBtnText: {
+    color: 'rgba(245, 220, 180, 0.5)',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1,
+  },
+  langBtnTextActive: {
+    color: '#F5E6C8',
   },
   title: {
     fontSize: 32,

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, ReactNode } from 'react';
+import { Language } from '../i18n/translations';
 
 export type Message = {
   id: string;
@@ -40,6 +41,8 @@ export type AppContextType = {
   gameState: { week: number; day: number; playerHouse: string } | null;
   setHousePoints: (p: any) => void;
   setGameState: (s: any) => void;
+  language: Language;
+  setLanguage: (lang: Language) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -134,6 +137,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     { gryffindor: 0, hufflepuff: 0, ravenclaw: 0, slytherin: 0 }
   );
   const [gameState, setGameState] = useState<{ week: number; day: number; playerHouse: string } | null>(null);
+  const [language, setLanguage] = useState<Language>(() => {
+    return (localStorage.getItem('hp_language') as Language) || 'tr';
+  });
+
+  const handleSetLanguage = (lang: Language) => {
+    localStorage.setItem('hp_language', lang);
+    setLanguage(lang);
+  };
 
   useEffect(() => {
     localStorage.setItem('hp_characters', JSON.stringify(characters));
@@ -175,6 +186,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         gameState,
         setHousePoints,
         setGameState,
+        language,
+        setLanguage: handleSetLanguage,
       }}
     >
       {children}

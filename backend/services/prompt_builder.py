@@ -186,7 +186,7 @@ def get_lorebook_entries(text: str, max_entries: int = 8) -> list[str]:
 
     return (constant_entries + matched_entries)[:max_entries]
 
-async def build_prompt(user_name: str, character_id: str, location_id: str, messages: List[dict], memories: List[str], character_profile: dict = None, relationship_context: str = "", time_context: str = "", missed_context: str = "") -> list:
+async def build_prompt(user_name: str, character_id: str, location_id: str, messages: List[dict], memories: List[str], character_profile: dict = None, relationship_context: str = "", time_context: str = "", missed_context: str = "", language: str = "tr") -> list:
     """Builds the system prompt using the character card, lorebook, and seed data."""
     project_root = _project_root()
     char_path = project_root / "database" / "seed_data" / "characters.json"
@@ -436,6 +436,22 @@ Rules:
 - Day names in Turkish: Pazartesi, Salı, Çarşamba, Perşembe, Cuma, Cumartesi, Pazar
 """
     system_content += proactive_instruction
+
+    if language == "en":
+        lang_instruction = (
+            "\n\n## LANGUAGE\n"
+            "You MUST respond entirely in English. "
+            "All narration, dialogue, and character speech must be in English. "
+            "Do not use any Turkish words or sentences."
+        )
+    else:
+        lang_instruction = (
+            "\n\n## DİL\n"
+            "Tüm yanıtlarını Türkçe yaz. "
+            "Anlatı, diyalog ve karakter konuşmalarının tamamı Türkçe olacak."
+        )
+
+    system_content += lang_instruction
 
     out = [{"role": "system", "content": system_content}]
     out.extend(messages or [])

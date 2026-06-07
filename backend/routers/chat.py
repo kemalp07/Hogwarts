@@ -150,6 +150,7 @@ async def chat_endpoint(request: Request):
     location_id = body.get("location_id") or "great-hall"
     user_name = body.get("user_name") or "Öğrenci"
     character_profile = body.get("character_profile")
+    language = body.get("language", "tr")
 
     # Inactivity kontrolü → otomatik gün geçişi
     day_advanced = check_inactivity_advance(session_id, threshold_minutes=30)
@@ -205,6 +206,7 @@ async def chat_endpoint(request: Request):
         relationship_context=relationship_context,
         time_context=time_context,
         missed_context=missed_context,
+        language=language,
     )
 
     model = body.get("model") or os.getenv("VERTEX_AI_MODEL", "gemini-2.0-flash-001")
