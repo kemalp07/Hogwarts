@@ -19,20 +19,20 @@ from db.supabase_client import supabase
 logger = logging.getLogger(__name__)
 
 HOUSES = ["gryffindor", "hufflepuff", "ravenclaw", "slytherin"]
-TARGET_HOUSE_POINT_SPREAD = 30   # yumuşak hedef — organik denge buna doğru çeker
-HARD_HOUSE_POINT_SPREAD = 50     # sert üst sınır — ancak aşırı uçta devreye girer
+TARGET_HOUSE_POINT_SPREAD = 80   # yumuşak hedef — organik denge buna doğru çeker
+HARD_HOUSE_POINT_SPREAD = 150    # sert üst sınır — ancak aşırı uçta devreye girer
 MAX_HOUSE_POINT_SPREAD = TARGET_HOUSE_POINT_SPREAD  # geriye uyumluluk
 MIN_POINTS_FLOOR_BASE = 5
 POINTS_FLOOR_INTERVAL_MINUTES = 3
 POINTS_FLOOR_STEP = 5
-POINT_INCREASE_CHANCE = 0.93  # organik: %93 artış, %7 azalış
-ORGANIC_DRIFT_INTERVAL_SECONDS = 5
+POINT_INCREASE_CHANCE = 0.60  # organik: %60 artış, %40 azalış
+ORGANIC_DRIFT_INTERVAL_SECONDS = 45
 ORGANIC_DRIFT_HOUSE_CHANCE = 0.85
 ORGANIC_DRIFT_MIN_CHANGES = 1
 SPREAD_BALANCE_THRESHOLD = 40
-RUBBER_BAND_SPREAD = 40
-ROUTINE_POINT_MAGNITUDES = [5, 10, 15]
-ROUTINE_POINT_WEIGHTS = [60, 30, 10]  # 5 en sık, 10 orta, 15 en nadir
+RUBBER_BAND_SPREAD = 100
+ROUTINE_POINT_MAGNITUDES = [5, 10]
+ROUTINE_POINT_WEIGHTS = [70, 30]  # 5 en sık, 10 orta
 CALENDAR_PATH = Path(__file__).resolve().parents[2] / "backend" / "data" / "school_calendar.json"
 
 _CALENDAR_CACHE = None
