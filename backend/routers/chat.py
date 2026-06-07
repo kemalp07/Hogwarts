@@ -25,6 +25,8 @@ from services.house_points_service import (
     get_missed_classes_for_prompt,
     build_missed_class_context,
     get_location,
+    get_day_name,
+    localize_subject,
 )
 from services.world_simulation import run_point_simulation, extract_time_from_response, extract_inventory_and_location
 from services.relationship_service import analyze_relationship_changes, build_relationship_context
@@ -171,10 +173,10 @@ async def chat_endpoint(request: Request):
     if sleep_triggered:
         advance_hour(session_id, hours=14)
 
-    missed_context = build_missed_class_context(get_missed_classes_for_prompt(session_id))
+    missed_context = build_missed_class_context(get_missed_classes_for_prompt(session_id), language=language)
 
     game_state = get_game_state(session_id)
-    time_context = build_current_time_context(session_id)
+    time_context = build_current_time_context(session_id, language=language)
 
     narrator_injection = None
     if game_state.get("current_hour") == 8 or sleep_triggered or day_advanced:
@@ -469,7 +471,10 @@ async def delete_messages(session_id: str = Query(..., min_length=1)):
 
 
 @router.get("/schedule")
-async def schedule_endpoint(session_id: str = Query(..., min_length=1)):
+async def schedule_endpoint(
+    session_id: str = Query(..., min_length=1),
+    language: str = Query("tr"),
+):
     """Bugünün ve yarının ders programını döner."""
     state = get_game_state(session_id)
     week = state.get("current_week", 1)
@@ -484,9 +489,6 @@ async def schedule_endpoint(session_id: str = Query(..., min_length=1)):
 
     today_schedule = get_todays_schedule(week, day)
     tomorrow_schedule = get_todays_schedule(tomorrow_week, tomorrow_day)
-
-    day_names = {1: "Pazartesi", 2: "Salı", 3: "Çarşamba", 4: "Perşembe",
-                 5: "Cuma", 6: "Cumartesi", 7: "Pazar"}
 
     def build_classes(schedule, current_hour, is_today):
         classes = []
@@ -505,7 +507,7 @@ async def schedule_endpoint(session_id: str = Query(..., min_length=1)):
                 status = "future"
             classes.append({
                 "time": cls["time"],
-                "subject": cls["subject"],
+                "subject": localize_subject(cls["subject"], language),
                 "teacher": cls.get("teacher", ""),
                 "location": cls.get("location", ""),
                 "status": status,
@@ -516,11 +518,12 @@ async def schedule_endpoint(session_id: str = Query(..., min_length=1)):
     return JSONResponse(content={
         "week": week,
         "day": day,
-        "day_name": day_names.get(day, "Gün"),
+        "day_name": get_day_name(day, language),
         "hour": hour,
         "location": state.get("current_location", "gryffindor_tower"),
         "schedule": build_classes(today_schedule, hour, True),
-        "tomorrow_day_name": day_names.get(tomorrow_day, "Gün"),
+        "tomorrow_day": tomorrow_day,
+        "tomorrow_day_name": get_day_name(tomorrow_day, language),
         "tomorrow_schedule": build_classes(tomorrow_schedule, hour, False),
     })
 

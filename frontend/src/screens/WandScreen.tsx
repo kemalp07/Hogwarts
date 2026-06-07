@@ -9,6 +9,7 @@ import {
   ImageBackground,
 } from 'react-native';
 import { useAppContext, saveCharacterToDB } from '../context/AppContext';
+import { getWandStepOptions, getWandStepTitle, t } from '../i18n/translations';
 
 type WandScreenProps = {
   navigation: any;
@@ -17,22 +18,8 @@ type WandScreenProps = {
 const WAND_STEPS = ['wood', 'core', 'length', 'flexibility'] as const;
 type WandStepKey = (typeof WAND_STEPS)[number];
 
-const WAND_STEP_TITLES: Record<WandStepKey, string> = {
-  wood: 'Asanın ağacı...',
-  core: 'Asanın özü...',
-  length: 'Asanın uzunluğu...',
-  flexibility: 'Asanın esnekliği...',
-};
-
-const WAND_OPTIONS: Record<WandStepKey, string[]> = {
-  wood: ['Akasya', 'Meşe', 'Çam', 'Karaağaç', 'Söğüt', 'Gürgen', 'Kiraz', 'Kayın'],
-  core: ['Ejderha teli', 'Anka tüyü', 'Tek boynuzlu at kılı'],
-  length: ['9 inç', '10 inç', '11 inç', '12 inç', '13 inç'],
-  flexibility: ['Katı', 'Orta', 'Esnek'],
-};
-
 export const WandScreen: React.FC<WandScreenProps> = ({ navigation }) => {
-  const { activeCharacter, setActiveCharacter, setCharacters } = useAppContext();
+  const { activeCharacter, setActiveCharacter, setCharacters, language } = useAppContext();
   const [currentStep, setCurrentStep] = useState(0);
   const [selections, setSelections] = useState<Record<WandStepKey, string>>({
     wood: '',
@@ -59,7 +46,7 @@ export const WandScreen: React.FC<WandScreenProps> = ({ navigation }) => {
     if (!WAND_STEPS.every((step) => selections[step] !== '')) return;
 
     const { wood, core, length, flexibility } = selections;
-    const wand = `${wood} asası, ${core}, ${length}, ${flexibility}`;
+    const wand = t(language, 'wandDescription', wood, core, length, flexibility);
     const updated = { ...activeCharacter, wand };
 
     setCharacters((prev) =>
@@ -85,7 +72,7 @@ export const WandScreen: React.FC<WandScreenProps> = ({ navigation }) => {
     }
   };
 
-  const renderOptionGrid = (options: string[], selected: string, onSelect: (value: string) => void) => (
+  const renderOptionGrid = (options: readonly string[], selected: string, onSelect: (value: string) => void) => (
     <View style={styles.optionsContainer}>
       {options.map((option) => {
         const isSelected = selected === option;
@@ -117,8 +104,8 @@ export const WandScreen: React.FC<WandScreenProps> = ({ navigation }) => {
         <View style={styles.overlay} />
         <View style={styles.content}>
           <View style={styles.quoteBlock}>
-            <Text style={styles.quoteText}>"Asa sahibini seçer..."</Text>
-            <Text style={styles.quoteAuthor}>— Garrick Ollivander</Text>
+            <Text style={styles.quoteText}>{t(language, 'wandQuote')}</Text>
+            <Text style={styles.quoteAuthor}>{t(language, 'wandQuoteAuthor')}</Text>
           </View>
 
           <View style={styles.progressContainer}>
@@ -135,11 +122,11 @@ export const WandScreen: React.FC<WandScreenProps> = ({ navigation }) => {
             </Text>
           </View>
 
-          <Text style={styles.stepTitle}>{WAND_STEP_TITLES[stepKey]}</Text>
+          <Text style={styles.stepTitle}>{getWandStepTitle(language, stepKey)}</Text>
 
           <View style={styles.stepBody}>
             {renderOptionGrid(
-              WAND_OPTIONS[stepKey],
+              getWandStepOptions(language, stepKey),
               selections[stepKey],
               (value) => setSelections((prev) => ({ ...prev, [stepKey]: value })),
             )}
@@ -148,7 +135,7 @@ export const WandScreen: React.FC<WandScreenProps> = ({ navigation }) => {
           <View style={styles.buttonRow}>
             {currentStep > 0 && (
               <Pressable style={styles.backButton} onPress={handleBack}>
-                <Text style={styles.backButtonText}>Geri</Text>
+                <Text style={styles.backButtonText}>{t(language, 'back')}</Text>
               </Pressable>
             )}
 
@@ -165,7 +152,7 @@ export const WandScreen: React.FC<WandScreenProps> = ({ navigation }) => {
                 ]}
                 numberOfLines={1}
               >
-                {isLastStep ? "Hogwarts'a Başla" : 'İleri'}
+                {isLastStep ? t(language, 'startHogwarts') : t(language, 'next')}
               </Text>
             </Pressable>
           </View>

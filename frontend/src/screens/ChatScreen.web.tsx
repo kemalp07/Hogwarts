@@ -22,11 +22,12 @@ import { useAppContext, Message, saveCharacterToDB } from '../context/AppContext
 import { getFirstMessage } from '../services/characterCard';
 import { deleteMessage, sendMessage as sendAiMessage, updateMessage } from '../services/aiService';
 import { housePointsEqual, normalizeHousePoints } from '../utils/housePoints';
+import { getInputTips, getTagNames, t, Language } from '../i18n/translations';
+import { localizeScheduleData } from '../i18n/schedule';
 
 const NARRATOR_NAME = 'Hogwarts';
 const HOUSE_POINTS_POLL_MS = 3000;
 const HOUSE_POINTS_REFRESH_DELAYS = [1500, 3500, 6000, 10000, 18000] as const;
-const NARRATOR_SUBTITLE = 'Büyücü Dünyası';
 const NARRATOR_SYMBOL = '⚡';
 const HOUSES = ['Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin'] as const;
 const MIN_INPUT_HEIGHT = 36;
@@ -148,21 +149,6 @@ const TAG_AVATARS: Record<string, any> = {
   'PEEVES': require('../../assets/characters/peeves.png'),
 };
 
-const TAG_NAMES: Record<string, string> = {
-  NARRATOR: 'Anlatıcı',
-  SORTING_HAT: 'Seçmen Şapka',
-  HARRY: 'Harry Potter',
-  HERMIONE: 'Hermione Granger',
-  RON: 'Ron Weasley',
-  SNAPE: 'Severus Snape',
-  DUMBLEDORE: 'Albus Dumbledore',
-  DRACO: 'Draco Malfoy',
-  HAGRID: 'Rubeus Hagrid',
-  MCGONAGALL: 'Prof. McGonagall',
-  UMBRIDGE: 'Dolores Umbridge',
-  VOLDEMORT: 'Lord Voldemort',
-};
-
 function houseColor(house: string): string {
   switch (house.toLowerCase()) {
     case 'gryffindor': return 'rgba(120, 10, 10, 0.92)';
@@ -271,6 +257,7 @@ function BubbleInlineActions({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { language } = useAppContext();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -318,7 +305,7 @@ function BubbleInlineActions({
               }}
               style={{ paddingHorizontal: 14, paddingVertical: 8 }}
             >
-              <Text style={{ color: '#c9a84c', fontSize: 12 }}>Düzenle</Text>
+              <Text style={{ color: '#c9a84c', fontSize: 12 }}>{t(language, 'edit')}</Text>
             </Pressable>
             <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.06)' }} />
             <Pressable
@@ -328,7 +315,7 @@ function BubbleInlineActions({
               }}
               style={{ paddingHorizontal: 14, paddingVertical: 8 }}
             >
-              <Text style={{ color: '#e87a7a', fontSize: 12 }}>Sil</Text>
+              <Text style={{ color: '#e87a7a', fontSize: 12 }}>{t(language, 'delete')}</Text>
             </Pressable>
           </View>
         </>
@@ -344,13 +331,15 @@ function EditMessageActions({
   onSave: () => void;
   onCancel: () => void;
 }) {
+  const { language } = useAppContext();
+
   return (
     <View style={styles.userMessageActions}>
       <Pressable onPress={onSave}>
-        <Text style={styles.userActionSave}>Kaydet</Text>
+        <Text style={styles.userActionSave}>{t(language, 'save')}</Text>
       </Pressable>
       <Pressable onPress={onCancel}>
-        <Text style={styles.userActionCancel}>İptal</Text>
+        <Text style={styles.userActionCancel}>{t(language, 'cancel')}</Text>
       </Pressable>
     </View>
   );
@@ -370,7 +359,7 @@ type TaggedBlock = {
   content: string;
 };
 
-function parseTaggedResponse(text: string): Array<{ tag: string; name: string; content: string }> {
+function parseTaggedResponse(text: string, tagNames: Record<string, string>): Array<{ tag: string; name: string; content: string }> {
   const lines = text.split('\n');
   const blocks: Array<{ tag: string; name: string; content: string }> = [];
   let currentTag = 'NARRATOR';
@@ -380,7 +369,7 @@ function parseTaggedResponse(text: string): Array<{ tag: string; name: string; c
     const content = currentLines.join('\n').trim();
     if (content) {
       let resolvedTag = currentTag;
-      let resolvedName = TAG_NAMES[currentTag] || currentTag;
+      let resolvedName = tagNames[currentTag] || currentTag;
 
       if (currentTag.startsWith('CHARACTER:')) {
         resolvedName = currentTag.slice(10).trim();
@@ -516,12 +505,13 @@ function AIMessageBubble({
   setEditingId,
   setMessages,
   scheduleData,
-}: MessageEditProps & { scheduleData?: any }) {
+  language,
+}: MessageEditProps & { scheduleData?: any; language: Language }) {
   if (isErrorMessage(item.text)) {
     return (
       <View style={styles.aiBlockRow}>
         <Text style={styles.aiErrorFallback}>
-          ⏳ Hogwarts büyüleri yüklenirken bir aksaklık yaşandı. Lütfen tekrar dene...
+          {t(language, 'aiErrorFallback')}
         </Text>
       </View>
     );
@@ -547,7 +537,7 @@ function AIMessageBubble({
     );
   }
 
-  const taggedBlocks = parseTaggedResponse(item.text);
+  const taggedBlocks = parseTaggedResponse(item.text, getTagNames(language));
   const mergedBlocks = taggedBlocks.reduce((acc: typeof taggedBlocks, block) => {
     const last = acc[acc.length - 1];
     if (last && last.tag === block.tag) {
@@ -588,7 +578,7 @@ function AIMessageBubble({
                     marginBottom: 6,
                     letterSpacing: 0.5,
                   }}>
-                    📅 {scheduleData.day_name} • {scheduleData.week}. Hafta • 🕙 {String(scheduleData.hour).padStart(2, '0')}:00
+                    📅 {scheduleData.day_name} • {t(language, 'weekLabel', scheduleData.week)} • 🕙 {String(scheduleData.hour).padStart(2, '0')}:00
                   </Text>
                 )}
                 <View style={styles.aiMessageRoot}>
@@ -652,15 +642,6 @@ function MessageBubble({
     </View>
   );
 }
-
-const INPUT_TIPS = [
-  '💬 Karakter konuşturmak için tırnak kullan: "Hermione\'ye bak"',
-  '⚡ Eylem için yıldız kullan: *çevreye bakınır*',
-  '🧙 Bir karakteri çağır: Snape\'e bir soru sor',
-  '📖 Sahneyi yönlendir: Kütüphaneye gitmek istiyorum',
-  '🔮 Duygu belirt: Biraz tedirgin hissediyorum',
-  '📖 Hikayeye devam etmek için sadece "devam et" yaz',
-];
 
 const HOUSE_CONFIG: Record<string, { label: string; short: string; color: string; logoKey: string }> = {
   gryffindor: { label: 'Gryffindor', short: 'GRIFF',   color: '#e8b86d', logoKey: 'gryffindor' },
@@ -803,7 +784,7 @@ const HousePointsPanel: React.FC<HousePanelProps> = ({
   );
 };
 
-const TimeStrip: React.FC<{ data: any; onPress: () => void }> = ({ data, onPress }) => {
+const TimeStrip: React.FC<{ data: any; onPress: () => void; language: Language }> = ({ data, onPress, language }) => {
   if (!data) return null;
 
   const activeClass = data.schedule?.find((c: any) => c.status === 'active');
@@ -836,7 +817,7 @@ const TimeStrip: React.FC<{ data: any; onPress: () => void }> = ({ data, onPress
       }}
     >
       <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 9, fontFamily: 'Cinzel, serif', letterSpacing: 1 }}>
-        {data.day_name} • {data.week}. Hafta
+        {data.day_name} • {t(language, 'weekLabel', data.week)}
       </Text>
       <Text style={{ color: '#c9a84c', fontSize: 13, fontFamily: 'Cinzel, serif', fontWeight: '700', marginTop: 2 }}>
         {String(data.hour).padStart(2, '0')}:00
@@ -844,7 +825,7 @@ const TimeStrip: React.FC<{ data: any; onPress: () => void }> = ({ data, onPress
       <Text style={{ color: accentColor, fontSize: 10, fontFamily: 'Cinzel, serif', marginTop: 3 }}>
         {activeClass ? `🔴 ${activeClass.subject}`
          : upcomingClass ? `⏳ ${upcomingClass.subject}`
-         : '✨ Serbest'}
+         : t(language, 'freeTime')}
       </Text>
     </Pressable>
   );
@@ -853,7 +834,8 @@ const TimeStrip: React.FC<{ data: any; onPress: () => void }> = ({ data, onPress
 const SchedulePopup: React.FC<{
   data: any;
   onClose: () => void;
-}> = ({ data, onClose }) => {
+  language: Language;
+}> = ({ data, onClose, language }) => {
   if (!data) return null;
 
   const statusIcon = (status: string) => {
@@ -906,7 +888,7 @@ const SchedulePopup: React.FC<{
             marginBottom: 4,
           }}
         >
-          {data.day_name} Programı
+          {t(language, 'scheduleTitle', data.day_name)}
         </Text>
         <Text
           style={{
@@ -917,12 +899,12 @@ const SchedulePopup: React.FC<{
             marginBottom: 16,
           }}
         >
-          {data.week}. Hafta • Saat {String(data.hour).padStart(2, '0')}:00
+          {t(language, 'scheduleTime', String(data.hour).padStart(2, '0'))} • {t(language, 'weekLabel', data.week)}
         </Text>
 
         {data.schedule?.length === 0 ? (
           <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontStyle: 'italic' }}>
-            Bugün ders yok — serbest zaman
+            {t(language, 'noClassesToday')}
           </Text>
         ) : (
           data.schedule?.map((cls: any, i: number) => (
@@ -945,7 +927,7 @@ const SchedulePopup: React.FC<{
                 {cls.teacher ? (
                   <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
                     {cls.teacher}
-                    {cls.penalty > 0 ? ` • kaçırırsan -${cls.penalty} puan` : ''}
+                    {cls.penalty > 0 ? ` • ${t(language, 'missPenalty', cls.penalty)}` : ''}
                   </Text>
                 ) : null}
               </View>
@@ -963,11 +945,11 @@ const SchedulePopup: React.FC<{
             fontWeight: '600',
           }}
         >
-          Yarın — {data.tomorrow_day_name}
+          {t(language, 'tomorrow', data.tomorrow_day_name)}
         </Text>
         {data.tomorrow_schedule?.length === 0 ? (
           <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontStyle: 'italic' }}>
-            Yarın ders yok
+            {t(language, 'noClassesTomorrow')}
           </Text>
         ) : (
           data.tomorrow_schedule?.map((cls: any, i: number) => (
@@ -999,7 +981,7 @@ const SchedulePopup: React.FC<{
 
         <Pressable onPress={onClose} style={{ marginTop: 16, alignItems: 'center' }}>
           <Text style={{ color: 'rgba(201,168,76,0.6)', fontSize: 12, fontFamily: 'Cinzel, serif' }}>
-            Kapat
+            {t(language, 'close')}
           </Text>
         </Pressable>
       </Pressable>
@@ -1022,7 +1004,10 @@ const {
   gameState,
   setHousePoints,
   setGameState,
+  language,
 } = useAppContext();
+
+  const inputTips = useMemo(() => getInputTips(language), [language]);
 
   const userName = activeCharacter?.name || '';
   const playerAttraction = activeCharacter?.attraction || 'Her ikisi';
@@ -1134,7 +1119,11 @@ const {
   const [showHouseSelection, setShowHouseSelection] = useState<boolean>(false);
   const [tipIndex, setTipIndex] = useState(0);
   const [historyLoaded, setHistoryLoaded] = useState(false);
-  const [scheduleData, setScheduleData] = useState<any>(null);
+  const [rawScheduleData, setRawScheduleData] = useState<any>(null);
+  const scheduleData = useMemo(
+    () => localizeScheduleData(rawScheduleData, language),
+    [rawScheduleData, language],
+  );
   const [currentLocation, setCurrentLocation] = useState<string>('gryffindor_tower');
   const [displayLocation, setDisplayLocation] = useState<string>('gryffindor_tower');
   const bgOpacity = useRef(new Animated.Value(1)).current;
@@ -1149,18 +1138,22 @@ const {
     if (historyLoaded) return; // history yüklendiyse dokunma
     if (activeCharacter.house) return; // house varsa skip
     
-    const firstMes = getFirstMessage(0);
+    const firstMes = getFirstMessage(0, language);
     const personalizedMessage = firstMes.replace(/\{\{user\}\}/g, userName || '');
     setMessages([createMessage('ai', personalizedMessage)]);
     setShowHouseSelection(true);
-  }, [setMessages, userName, activeCharacter, historyLoaded]);
+  }, [setMessages, userName, activeCharacter, historyLoaded, language]);
+
+  useEffect(() => {
+    setTipIndex(0);
+  }, [language]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setTipIndex(i => (i + 1) % INPUT_TIPS.length);
+      setTipIndex(i => (i + 1) % inputTips.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [inputTips.length]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -1276,7 +1269,7 @@ const {
       console.error('AI Error:', error);
       setMessages([
         ...nextMessages,
-        createMessage('ai', 'Bir şeyler ters gitti, tekrar dener misin?'),
+        createMessage('ai', t(language, 'errorMessage')),
       ]);
     } finally {
       setIsLoading(false);
@@ -1340,7 +1333,7 @@ const {
       console.error('AI Error:', error);
       setMessages([
         ...nextMessages,
-        createMessage('ai', 'Bir şeyler ters gitti, tekrar dener misin?'),
+        createMessage('ai', t(language, 'errorMessage')),
       ]);
     } finally {
       setIsLoading(false);
@@ -1379,10 +1372,12 @@ const {
   const fetchSchedule = async () => {
     if (!sessionId) return;
     try {
-      const res = await fetch(`https://hogwarts-2.onrender.com/api/schedule?session_id=${encodeURIComponent(sessionId)}`);
+      const res = await fetch(
+        `https://hogwarts-2.onrender.com/api/schedule?session_id=${encodeURIComponent(sessionId)}&language=${language}`,
+      );
       if (!res.ok) return;
       const data = await res.json();
-      setScheduleData(data);
+      setRawScheduleData(data);
       if (data.location) setCurrentLocation(data.location);
     } catch {}
   };
@@ -1390,7 +1385,9 @@ const {
   const fetchLocation = async () => {
     if (!sessionId) return;
     try {
-      const res = await fetch(`https://hogwarts-2.onrender.com/api/schedule?session_id=${encodeURIComponent(sessionId)}`);
+      const res = await fetch(
+        `https://hogwarts-2.onrender.com/api/schedule?session_id=${encodeURIComponent(sessionId)}&language=${language}`,
+      );
       if (!res.ok) return;
       const data = await res.json();
       if (data.location) setCurrentLocation(data.location);
@@ -1401,7 +1398,7 @@ const {
     if (!sessionId) return;
     fetchSchedule();
     fetchLocation();
-  }, [sessionId]);
+  }, [sessionId, language]);
 
   useEffect(() => {
     Animated.timing(bgOpacity, {
@@ -1472,7 +1469,7 @@ const {
 
             <View style={styles.header}>
               <Text style={styles.headerTitle}>{NARRATOR_NAME}</Text>
-              <Text style={styles.headerSubtitle}>{NARRATOR_SUBTITLE}</Text>
+              <Text style={styles.headerSubtitle}>{t(language, 'narratorSubtitle')}</Text>
             </View>
 
             <FlatList
@@ -1490,6 +1487,7 @@ const {
                     setEditingId={setEditingId}
                     setMessages={setMessages}
                     scheduleData={scheduleData}
+                    language={language}
                   />
                 ) : (
                   <MessageBubble
@@ -1518,7 +1516,7 @@ const {
               ListEmptyComponent={
                 <View style={styles.emptyStateWrap}>
                   <Text style={styles.emptyStateTitle}>{NARRATOR_NAME}</Text>
-                  <Text style={styles.emptyStateSubtitle}>Sana nasıl yardımcı olabilirim?</Text>
+                  <Text style={styles.emptyStateSubtitle}>{t(language, 'emptyStateSubtitle')}</Text>
                 </View>
               }
             />
@@ -1544,7 +1542,7 @@ const {
               </View>
             ) : (
               <View style={styles.inputArea}>
-                <Text style={styles.inputTip}>{INPUT_TIPS[tipIndex]}</Text>
+                <Text style={styles.inputTip}>{inputTips[tipIndex]}</Text>
                 <View style={[styles.inputBox, styles.inputBoxSpacing]}>
                   <TextInput
                     value={inputText}
@@ -1552,7 +1550,7 @@ const {
                     onSubmitEditing={isWeb ? undefined : handleSend}
                     onKeyPress={isWeb ? handleKeyPress : undefined}
                     onContentSizeChange={handleContentSizeChange}
-                    placeholder="Mesaj yaz... (devam et = hikaye ilerler)"
+                    placeholder={t(language, 'inputPlaceholderWeb')}
                     placeholderTextColor="#8B7355"
                     multiline={!isWeb}
                     blurOnSubmit={false}
@@ -1577,10 +1575,10 @@ const {
               </View>
             )}
 
-            <TimeStrip data={scheduleData} onPress={() => setShowSchedule(true)} />
+            <TimeStrip data={scheduleData} onPress={() => setShowSchedule(true)} language={language} />
 
             {showSchedule && (
-              <SchedulePopup data={scheduleData} onClose={() => setShowSchedule(false)} />
+              <SchedulePopup data={scheduleData} onClose={() => setShowSchedule(false)} language={language} />
             )}
           </View>
         </KeyboardAvoidingView>

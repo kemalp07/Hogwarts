@@ -434,6 +434,36 @@ def get_todays_schedule(week: int, day: int) -> list:
     return []
 
 
+DAY_NAMES_BY_LANG = {
+    "tr": {1: "Pazartesi", 2: "Salı", 3: "Çarşamba", 4: "Perşembe", 5: "Cuma", 6: "Cumartesi", 7: "Pazar"},
+    "en": {1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday", 7: "Sunday"},
+}
+
+SUBJECT_NAMES_EN = {
+    "Büyülü İksirler": "Potions",
+    "Uçuş Dersi": "Flying",
+    "Büyü": "Charms",
+    "Dönüşüm": "Transfiguration",
+    "Bitkibilim": "Herbology",
+    "Karanlık Sanatlara Karşı Korunma": "Defence Against the Dark Arts",
+    "Tarih": "History of Magic",
+    "Astronomi": "Astronomy",
+    "Serbest Çalışma": "Free Study",
+}
+
+
+def get_day_name(day: int, language: str = "tr") -> str:
+    lang = "en" if language == "en" else "tr"
+    default = "Day" if lang == "en" else "Gün"
+    return DAY_NAMES_BY_LANG[lang].get(day, default)
+
+
+def localize_subject(subject: str, language: str = "tr") -> str:
+    if language != "en" or not subject:
+        return subject
+    return SUBJECT_NAMES_EN.get(subject, subject)
+
+
 def advance_hour(session_id: str, hours: int = 1) -> dict:
     """Saati ilerlet. Gece geçince güne ilerle."""
     state = get_game_state(session_id)
@@ -624,10 +654,22 @@ def get_missed_classes_for_prompt(session_id: str) -> list[dict]:
         return []
 
 
-def build_missed_class_context(missed: list[dict]) -> str:
+def build_missed_class_context(missed: list[dict], language: str = "tr") -> str:
     """Kaçırılan dersler için system prompt enjeksiyonu."""
     if not missed:
         return ""
+
+    if language == "en":
+        lines = ["## MISSED CLASSES (reflect teacher reaction in this message):"]
+        for m in missed:
+            teacher = m.get("teacher", "the teacher")
+            subject = localize_subject(m.get("subject", ""), language)
+            lines.append(
+                f"- {subject} ({teacher}): -{m['penalty']} points deducted. "
+                f"{teacher} will remember this at the next encounter and show displeasure."
+            )
+        lines.append("Weave this into the scene naturally — let the teacher show annoyance, but don't overdo it.")
+        return "\n".join(lines)
 
     lines = ["## KAÇIRILAN DERSLER (bu mesajda öğretmen tepkisini yansıt):"]
     for m in missed:
@@ -641,7 +683,7 @@ def build_missed_class_context(missed: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def build_current_time_context(session_id: str) -> str:
+def build_current_time_context(session_id: str, language: str = "tr") -> str:
     """
     Mevcut zamanı ve o saat için ders/etkinlik bilgisini döner.
     System prompt'a enjekte edilir.
@@ -651,9 +693,7 @@ def build_current_time_context(session_id: str) -> str:
     day = state.get("current_day", 1)
     hour = state.get("current_hour", 8)
 
-    day_names = {1: "Pazartesi", 2: "Salı", 3: "Çarşamba", 4: "Perşembe",
-                 5: "Cuma", 6: "Cumartesi", 7: "Pazar"}
-    day_name = day_names.get(day, "Gün")
+    day_name = get_day_name(day, language)
 
     schedule = get_todays_schedule(week, day)
 
@@ -669,6 +709,37 @@ def build_current_time_context(session_id: str) -> str:
             upcoming_class = cls
         elif cls_hour < hour:
             missed_classes.append(cls)
+
+    if language == "en":
+        lines = [f"## GAME TIME: {day_name}, {hour:02d}:00, Week {week}"]
+        lines.append("TODAY'S OFFICIAL SCHEDULE — USE ONLY THESE, DO NOT ADD YOUR OWN:")
+        for cls in schedule:
+            teacher = cls.get("teacher", "")
+            subject = localize_subject(cls["subject"], language)
+            lines.append(f"  {cls['time']}: {subject}" + (f" ({teacher})" if teacher else ""))
+        if not schedule:
+            lines.append("  No classes today.")
+
+        if current_class:
+            subj = localize_subject(current_class["subject"], language)
+            lines.append(
+                f"CURRENT CLASS PERIOD: {subj} ({current_class['teacher']}) — the player should be in this class!"
+            )
+
+        if upcoming_class:
+            subj = localize_subject(upcoming_class["subject"], language)
+            lines.append(
+                f"IN 1 HOUR: {subj} ({upcoming_class['teacher']}) — upcoming class"
+            )
+
+        if missed_classes and hour > 9:
+            missed_names = [localize_subject(c["subject"], language) for c in missed_classes]
+            lines.append(f"MISSED CLASSES: {', '.join(missed_names)} — teachers remember this")
+
+        location = get_location(session_id)
+        location_display = location.replace("_", " ").title()
+        lines.append(f"PLAYER'S CURRENT LOCATION: {location_display}")
+        return "\n".join(lines)
 
     lines = [f"## OYUN ZAMANI: {day_name}, Saat {hour:02d}:00, {week}. Hafta"]
     lines.append("BUGÜNÜN RESMİ PROGRAMI — SADECE BUNLARI KULLAN, KENDİ EKLEME YAPMA:")

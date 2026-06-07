@@ -20,9 +20,9 @@ import {
 import { useAppContext, Message } from '../context/AppContext';
 import { getFirstMessage } from '../services/characterCard';
 import { sendMessage as sendAiMessage } from '../services/aiService';
+import { t } from '../i18n/translations';
 
 const NARRATOR_NAME = 'Hogwarts';
-const NARRATOR_SUBTITLE = 'Büyücü Dünyası';
 const NARRATOR_SYMBOL = '⚡';
 const HOUSES = ['Gryffindor', 'Hufflepuff', 'Ravenclaw', 'Slytherin'] as const;
 const MIN_INPUT_HEIGHT = 36;
@@ -240,6 +240,7 @@ export const ChatScreen: React.FC = () => {
     setIsLoading,
     hogwartsHouse,
     setHogwartsHouse,
+    language,
   } = useAppContext();
   const isWeb = Platform.OS === 'web';
   const flatListRef = useRef<FlatList<Message>>(null);
@@ -253,11 +254,11 @@ export const ChatScreen: React.FC = () => {
   const canSend = useMemo(() => inputText.trim().length > 0 && !isLoading, [inputText, isLoading]);
 
   useEffect(() => {
-    const firstMes = getFirstMessage(0);
+    const firstMes = getFirstMessage(0, language);
     const personalizedMessage = firstMes.replace(/\{\{user\}\}/g, userName || '');
     setMessages([createMessage('ai', personalizedMessage)]);
     setShowHouseSelection(true);
-  }, [setMessages, userName]);
+  }, [setMessages, userName, language]);
 
   // Auto-scroll on messages or loading change
   useEffect(() => {
@@ -291,7 +292,7 @@ export const ChatScreen: React.FC = () => {
       console.error('AI Error:', error);
       setMessages([
         ...nextMessages,
-        createMessage('ai', 'Bir şeyler ters gitti, tekrar dener misin?'),
+        createMessage('ai', t(language, 'errorMessage')),
       ]);
     } finally {
       setIsLoading(false);
@@ -324,7 +325,7 @@ export const ChatScreen: React.FC = () => {
       console.error('AI Error:', error);
       setMessages([
         ...nextMessages,
-        createMessage('ai', 'Bir şeyler ters gitti, tekrar dener misin?'),
+        createMessage('ai', t(language, 'errorMessage')),
       ]);
     } finally {
       setIsLoading(false);
@@ -356,7 +357,7 @@ export const ChatScreen: React.FC = () => {
               </View>
               <View style={styles.headerTextWrap}>
                 <Text style={styles.headerTitle}>{NARRATOR_NAME}</Text>
-                <Text style={styles.headerSubtitle}>{NARRATOR_SUBTITLE}</Text>
+                <Text style={styles.headerSubtitle}>{t(language, 'narratorSubtitle')}</Text>
               </View>
             </View>
 
@@ -378,7 +379,7 @@ export const ChatScreen: React.FC = () => {
               ListEmptyComponent={
                 <View style={styles.emptyStateWrap}>
                   <Text style={styles.emptyStateTitle}>{NARRATOR_NAME}</Text>
-                  <Text style={styles.emptyStateSubtitle}>Sana nasıl yardımcı olabilirim?</Text>
+                  <Text style={styles.emptyStateSubtitle}>{t(language, 'emptyStateSubtitle')}</Text>
                 </View>
               }
             />
@@ -411,7 +412,7 @@ export const ChatScreen: React.FC = () => {
                     onSubmitEditing={isWeb ? undefined : handleSend}
                     onKeyPress={isWeb ? handleKeyPress : undefined}
                     onContentSizeChange={handleContentSizeChange}
-                    placeholder="Mesaj yaz..."
+                    placeholder={t(language, 'inputPlaceholder')}
                     placeholderTextColor="#8B7355"
                     multiline={!isWeb}
                     blurOnSubmit={false}

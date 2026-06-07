@@ -10,6 +10,7 @@ import {
   TextInput,
 } from 'react-native';
 import { useAppContext, Character, saveCharacterToDB } from '../context/AppContext';
+import { getStepOptions, getStepTitle, t } from '../i18n/translations';
 
 type CharacterCreationScreenProps = {
   navigation: any;
@@ -23,38 +24,8 @@ const STEPS = [
 
 type StepKey = (typeof STEPS)[number];
 
-const STEP_TITLES: Record<StepKey, string> = {
-  name: 'Adın ne?',
-  gender: 'Cinsiyetin?',
-  traits: 'Kişiliğini tanımla (2 seç)',
-  origin: 'Kökenin?',
-  height: 'Boyun?',
-  hairColor: 'Saç rengin?',
-  fear: 'En büyük korkun?',
-  hobby: 'Hobilerin neler?',
-  secretTrait: 'Gizli bir özelliğin var...',
-  attraction: 'Kime ilgi duyarsın?',
-  summary: 'İşte sen!',
-};
-
-const GENDERS = ['Erkek', 'Kadın', 'Belirtmiyorum'];
-const ATTRACTIONS = ['Kadınlar', 'Erkekler', 'Her ikisi'];
-const TRAITS = ['Cesur', 'Zeki', 'Sadık', 'Gizemli', 'Hırslı', 'Merhametli', 'Yaratıcı', 'Kararlı'];
-const ORIGINS = ['Muggle ailesi', 'Büyücü ailesi', 'Yarı kan'];
-const HEIGHTS = ['Kısa', 'Orta boy', 'Uzun'];
-const HAIR_COLORS = ['Siyah', 'Kahverengi', 'Sarı', 'Kızıl', 'Beyaz'];
-const FEARS = ['Karanlık', 'Yükseklik', 'Yalnızlık', 'Başarısızlık', 'Ölüm'];
-const HOBBIES = ['Quidditch', 'Kitap okuma', 'Büyü araştırma', 'Müzik', 'Doğa'];
-const SECRET_TRAITS = [
-  'Aslında çok kırılgansın',
-  'Derin bir sırrın var',
-  'Geçmişinde karanlık bir olay var',
-  'Gizli bir yeteneğin var',
-  'Biri seni takip ediyor',
-];
-
 export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ navigation }) => {
-  const { characters, setCharacters, setActiveCharacter } = useAppContext();
+  const { characters, setCharacters, setActiveCharacter, language } = useAppContext();
   const [currentStep, setCurrentStep] = useState(0);
   const [name, setName] = useState('');
   const [gender, setGender] = useState('');
@@ -166,7 +137,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
   };
 
   const renderOptionGrid = (
-    options: string[],
+    options: readonly string[],
     selected: string | string[],
     onSelect: (value: string) => void,
   ) => (
@@ -198,7 +169,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="Adını gir..."
+            placeholder={t(language, 'namePlaceholder')}
             placeholderTextColor="rgba(245, 220, 180, 0.4)"
             style={styles.nameInput}
             autoFocus
@@ -206,23 +177,23 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
           />
         );
       case 'gender':
-        return renderOptionGrid(GENDERS, gender, setGender);
+        return renderOptionGrid(getStepOptions(language, 'gender'), gender, setGender);
       case 'traits':
-        return renderOptionGrid(TRAITS, selectedTraits, handleTraitToggle);
+        return renderOptionGrid(getStepOptions(language, 'traits'), selectedTraits, handleTraitToggle);
       case 'origin':
-        return renderOptionGrid(ORIGINS, origin, setOrigin);
+        return renderOptionGrid(getStepOptions(language, 'origin'), origin, setOrigin);
       case 'height':
-        return renderOptionGrid(HEIGHTS, height, setHeight);
+        return renderOptionGrid(getStepOptions(language, 'height'), height, setHeight);
       case 'hairColor':
-        return renderOptionGrid(HAIR_COLORS, hairColor, setHairColor);
+        return renderOptionGrid(getStepOptions(language, 'hairColor'), hairColor, setHairColor);
       case 'fear':
-        return renderOptionGrid(FEARS, fear, setFear);
+        return renderOptionGrid(getStepOptions(language, 'fear'), fear, setFear);
       case 'hobby':
-        return renderOptionGrid(HOBBIES, hobby, setHobby);
+        return renderOptionGrid(getStepOptions(language, 'hobby'), hobby, setHobby);
       case 'secretTrait':
-        return renderOptionGrid(SECRET_TRAITS, secretTrait, setSecretTrait);
+        return renderOptionGrid(getStepOptions(language, 'secretTrait'), secretTrait, setSecretTrait);
       case 'attraction':
-        return renderOptionGrid(ATTRACTIONS, attraction, setAttraction);
+        return renderOptionGrid(getStepOptions(language, 'attraction'), attraction, setAttraction);
       case 'summary':
         return (
           <View style={styles.summaryCard}>
@@ -255,7 +226,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
       >
         <View style={styles.overlay} />
         <View style={styles.content}>
-          <Text style={styles.title}>Karakterini Oluştur</Text>
+          <Text style={styles.title}>{t(language, 'createCharacterTitle')}</Text>
 
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
@@ -271,14 +242,14 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
             </Text>
           </View>
 
-          <Text style={styles.stepTitle}>{STEP_TITLES[stepKey]}</Text>
+          <Text style={styles.stepTitle}>{getStepTitle(language, stepKey)}</Text>
 
           <View style={styles.stepBody}>{renderStepContent()}</View>
 
           <View style={styles.buttonRow}>
             {currentStep > 0 && (
               <Pressable style={styles.backButton} onPress={handleBack}>
-                <Text style={styles.backButtonText}>Geri</Text>
+                <Text style={styles.backButtonText}>{t(language, 'back')}</Text>
               </Pressable>
             )}
 
@@ -295,7 +266,7 @@ export const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = (
                 ]}
                 numberOfLines={1}
               >
-                {isLastStep ? 'Asana Geç' : 'İleri'}
+                {isLastStep ? t(language, 'proceedToWand') : t(language, 'next')}
               </Text>
             </Pressable>
           </View>
